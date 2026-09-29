@@ -19,6 +19,7 @@ typedef struct {
     u8 pad_19[3];
 } DisplayProjectionTrackedObject;
 
+#if !defined(__x86_64__) && !defined(_M_X64)
 typedef char DisplayProjectionTrackedObject_screen_x_offset_must_be_0x8[
     DISPLAY_PROJECTION_TRACKED_OFFSET(screen_x) == 0x8 ? 1 : -1
 ];
@@ -28,6 +29,7 @@ typedef char DisplayProjectionTrackedObject_field_18_offset_must_be_0x18[
 typedef char DisplayProjectionTrackedObject_size_must_be_0x1C[
     sizeof(DisplayProjectionTrackedObject) == 0x1C ? 1 : -1
 ];
+#endif
 
 #undef DISPLAY_PROJECTION_TRACKED_OFFSET
 

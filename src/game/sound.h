@@ -7,7 +7,7 @@
 #include "sound_sequence_constants.h"
 #include "sound_voice_constants.h"
 
-#define SD_STATE_OFFSET(type, member) ((u32)&(((type *)0)->member))
+#define SD_STATE_OFFSET(type, member) ((size_t)&(((type *)0)->member))
 #define SD_COMMAND_QUEUE_COUNT 16
 #define SD_COMMAND_RECORD_SIZE 0x30
 #define SD_COMMAND_QUEUE_BYTE_OFFSET 0x80
@@ -65,10 +65,10 @@ typedef struct {
 } SDMusicPackage;
 
 typedef char SDMusicPackage_spu_address_offset_must_be_0x0C[
-    ((u32)&(((SDMusicPackage *)0)->spu_address)) == 0x0C ? 1 : -1
+    ((size_t)&(((SDMusicPackage *)0)->spu_address)) == 0x0C ? 1 : -1
 ];
 typedef char SDMusicPackage_vab_header_offset_must_be_0x50[
-    ((u32)&(((SDMusicPackage *)0)->vab_header)) == 0x50 ? 1 : -1
+    ((size_t)&(((SDMusicPackage *)0)->vab_header)) == 0x50 ? 1 : -1
 ];
 
 typedef struct {
@@ -449,6 +449,7 @@ typedef char SDValueLink_size_must_be_0x08[
 typedef char SDValueLink_sector_offset_must_be_at_0x00[
     SD_STATE_OFFSET(SDValueLink, sector_offset) == 0 ? 1 : -1
 ];
+#if !defined(__x86_64__) && !defined(_M_X64)
 typedef char SDValue_size_must_be_0x164C[
     sizeof(SDValue) == 0x164C ? 1 : -1
 ];
@@ -538,6 +539,7 @@ typedef char SDValue_output_level_offset_must_be_0x154C[
     SD_STATE_OFFSET(SDValue, output_level) == 0x154C &&
     SD_STATE_OFFSET(SDValue, field_1550) == 0x1550 ? 1 : -1
 ];
+#endif
 typedef char SDSecondaryObject_size_must_be_0x28[
     sizeof(SDSecondaryObject) == SD_SECONDARY_OBJECT_SIZE ? 1 : -1
 ];
@@ -605,6 +607,7 @@ typedef char SDSequenceTrack_ended_offset_must_be_0x24[
 typedef char SDSequenceTrack_running_status_offset_must_be_0x29[
     SD_STATE_OFFSET(SDSequenceTrack, running_status) == 0x29 ? 1 : -1
 ];
+#if !defined(__x86_64__) && !defined(_M_X64)
 typedef char SDSecondaryTransfer_size_must_be_0x1C[
     sizeof(SDSecondaryTransfer) == 0x1C ? 1 : -1
 ];
@@ -644,9 +647,11 @@ typedef char SDSecondaryState_event_handle_offset_must_be_0x504[
 typedef char SDSecondaryState_voice_attr_offset_must_be_0x4C0[
     SD_STATE_OFFSET(SDSecondaryState, voice_attr) == 0x4C0 ? 1 : -1
 ];
+#endif
 typedef char SpuVoiceAttr_size_must_be_0x40[
     sizeof(SpuVoiceAttr) == 0x40 ? 1 : -1
 ];
+#if !defined(__x86_64__) && !defined(_M_X64)
 typedef char SDSecondaryState_object_count_offset_must_be_0x510[
     SD_STATE_OFFSET(SDSecondaryState, object_count) == 0x510 ? 1 : -1
 ];
@@ -678,6 +683,7 @@ typedef char SDSecondaryState_field_081C_offset_must_be_0x81C[
 typedef char SDSecondaryState_field_0844_offset_must_be_0x844[
     SD_STATE_OFFSET(SDSecondaryState, field_0844) == 0x844 ? 1 : -1
 ];
+#endif
 
 #undef SD_STATE_OFFSET
 

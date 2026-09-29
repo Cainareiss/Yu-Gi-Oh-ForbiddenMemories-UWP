@@ -5,7 +5,7 @@
 #include "duel_effect_allocate_request.h"
 
 #define DUEL_EFFECT_REQUEST_OFFSET(member) \
-    ((u32)&(((DuelEffectRequest *)0)->member))
+    ((size_t)&(((DuelEffectRequest *)0)->member))
 #define DUEL_EFFECT_REQUEST_COUNT 8
 #define DUEL_EFFECT_REQUEST_FLAG_NONBLOCKING 0x20
 #define DUEL_EFFECT_REQUEST_FLAG_INITIALIZED 0x40
@@ -43,7 +43,11 @@ typedef struct {
     s32 field_0C;   /* 0x0C */
     s16 field_10;   /* 0x10 */
     s16 field_12;   /* 0x12 */
+#if defined(__x86_64__) || defined(_M_X64)
+    u32 buffer;     /* 0x14 */
+#else
     void *buffer;   /* 0x14 */
+#endif
     s16 id;         /* 0x18 */
     s16 field_1A;   /* 0x1A */
     u8 flags;       /* 0x1C */

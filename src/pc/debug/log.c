@@ -4,7 +4,11 @@
 #include "monitor.h"
 #include "pc/platform/platform.h"
 #include "pc/sdk/display.h"
+#ifdef _WIN32
+#include <windows.h>
+#else
 #include <pthread.h>
+#endif
 #include <stdarg.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -45,7 +49,15 @@ static volatile uint32_t enabled;
 static SignalRecord signal_ring[SIGNAL_RECORDS];
 static volatile unsigned signal_head, signal_tail, signal_dropped;
 static FILE *log_file;
+#ifdef _WIN32
+static SRWLOCK output_lock = SRWLOCK_INIT;
+#define OUTPUT_LOCK() AcquireSRWLockExclusive(&output_lock)
+#define OUTPUT_UNLOCK() ReleaseSRWLockExclusive(&output_lock)
+#else
 static pthread_mutex_t output_lock = PTHREAD_MUTEX_INITIALIZER;
+#define OUTPUT_LOCK() pthread_mutex_lock(&output_lock)
+#define OUTPUT_UNLOCK() pthread_mutex_unlock(&output_lock)
+#endif
 
 static uint64_t timestamp_us(void)
 {
@@ -112,7 +124,7 @@ static void emit(LogChannel channel, uint64_t timestamp, unsigned frame, unsigne
     unsigned at;
     snprintf(line, sizeof(line), "[t %llu us frame %u vb %u %s] %s",
              (unsigned long long)timestamp, frame, vblank, Log_ChannelName(channel), message);
-    pthread_mutex_lock(&output_lock);
+    OUTPUT_LOCK();
     at = __atomic_fetch_add(&tail_head, 1, __ATOMIC_RELAXED);
     {   /* the ring's lines are shorter: cut, not overrun */
         char *slot = tail[at % TAIL_LINES];
@@ -121,7 +133,7 @@ static void emit(LogChannel channel, uint64_t timestamp, unsigned frame, unsigne
         slot[length] = '\0';
     }
     if (!print) {
-        pthread_mutex_unlock(&output_lock);
+        OUTPUT_UNLOCK();
         return;
     }
     fputs(line, stderr);
@@ -132,7 +144,7 @@ static void emit(LogChannel channel, uint64_t timestamp, unsigned frame, unsigne
         if (!strchr(line, '\n')) fputc('\n', log_file);
         fflush(log_file);
     }
-    pthread_mutex_unlock(&output_lock);
+    OUTPUT_UNLOCK();
 }
 
 void Log_Printf(LogChannel channel, const char *format, ...)

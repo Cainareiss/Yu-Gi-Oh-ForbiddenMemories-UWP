@@ -27,12 +27,13 @@ int Paths_MakeDirs(const char *path)
     size_t length = strlen(path), i;
     if (length >= sizeof(work)) return -1;
     memcpy(work, path, length + 1);
-    while (length > 1 && work[length - 1] == '/') work[--length] = '\0';
+    while (length > 1 && (work[length - 1] == '/' || work[length - 1] == '\\')) work[--length] = '\0';
     for (i = 1; i < length; i++) {
-        if (work[i] != '/') continue;
+        if (work[i] != '/' && work[i] != '\\') continue;
+        char saved = work[i];
         work[i] = '\0';
         if (mkdir(work, 0777) && access(work, X_OK)) return -1;
-        work[i] = '/';
+        work[i] = saved;
     }
     if (mkdir(work, 0777) && access(work, X_OK)) return -1;
     return 0;
@@ -41,7 +42,9 @@ int Paths_MakeDirs(const char *path)
 /* Everything above the last separator of a path. */
 static void directory_of(char *path)
 {
-    char *slash = strrchr(path, '/');
+    char *slash1 = strrchr(path, '/');
+    char *slash2 = strrchr(path, '\\');
+    char *slash = slash1 > slash2 ? slash1 : slash2;
     if (slash) *slash = '\0';
     else path[0] = '\0';
 }
@@ -87,13 +90,10 @@ const char *Paths_UserDir(void)
     } else {
         char root[PATH_MAX_ - 32] = ""; /* room for the folder name after it */
 #ifdef _WIN32
-        /* Documents\My Games is where Windows games have put their files
-         * since the Games for Windows era; the player can find and back it
-         * up without being told where to look. Ask the shell where Documents
-         * is, since OneDrive and the folder's Location tab both move it. */
+        const char *profile = getenv("USERPROFILE");
+#if !defined(MEMORIES_UWP) && !defined(WINAPI_FAMILY_PARTITION)
         wchar_t documents[MAX_PATH];
         char *utf8 = NULL;
-        const char *profile = getenv("USERPROFILE");
         if (SHGetFolderPathW(NULL, CSIDL_PERSONAL, NULL, 0, documents) == S_OK)
             utf8 = Memories_WideToUtf8(documents);
         if (utf8) {
@@ -101,6 +101,7 @@ const char *Paths_UserDir(void)
             free(utf8);
         }
         else
+#endif
             snprintf(root, sizeof(root), "%s/Documents/My Games", profile && *profile ? profile : ".");
 #else
         const char *home = getenv("HOME"), *xdg = getenv("XDG_DATA_HOME");

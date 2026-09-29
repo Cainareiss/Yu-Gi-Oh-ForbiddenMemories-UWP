@@ -71,7 +71,8 @@ typedef struct {
     GsRVIEW2 view;
 } ViewState;
 
-#define VIEW_STATE_OFFSET(member) ((u32)&(((ViewState *)0)->member))
+#if !defined(__x86_64__) && !defined(_M_X64)
+#define VIEW_STATE_OFFSET(member) ((size_t)&(((ViewState *)0)->member))
 typedef char ViewState_angle_offset_must_be_0x2[
     VIEW_STATE_OFFSET(angle) == 0x2 ? 1 : -1
 ];
@@ -88,6 +89,7 @@ typedef char ViewState_super_offset_must_be_0x2C[
     VIEW_STATE_OFFSET(view.super) == 0x2C ? 1 : -1
 ];
 #undef VIEW_STATE_OFFSET
+#endif
 
 extern ViewState D_800F2848;
 

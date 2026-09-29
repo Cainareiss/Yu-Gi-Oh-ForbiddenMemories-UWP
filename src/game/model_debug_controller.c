@@ -56,6 +56,18 @@ s32 ModelDebug_UpdateController(void)
             *(u16 *)&D_8009B004.fields.height =
                 ((ModelBackgroundRecord *)D_8009AF88)->stage_height;
             height = D_8009B004.fields.height;
+#if defined(__x86_64__) || defined(_M_X64)
+            struct _GsCOORDUNIT *d18 = (struct _GsCOORDUNIT *)(uintptr_t)stage->field_D18;
+            if (d18) {
+                d18->rot.vx = 0;
+                d18->rot.vy = 0;
+                d18->rot.vz = 0;
+                d18->matrix.t[0] = 0;
+                d18->matrix.t[1] = height;
+                d18->matrix.t[2] = 0;
+            }
+            func_8005922C(d18, 0);
+#else
             if (stage->field_D18) {
                 stage->field_D18->rot.vx = 0;
                 stage->field_D18->rot.vy = 0;
@@ -65,6 +77,7 @@ s32 ModelDebug_UpdateController(void)
                 stage->field_D18->matrix.t[2] = 0;
             }
             func_8005922C(stage->field_D18, 0);
+#endif
             D_8009AF9A = 0;
         }
     } else if (!slots[0].field_E1F) {
@@ -142,6 +155,18 @@ s32 ModelDebug_UpdateController(void)
 
                 stage += 2;
                 height = D_8009B004.fields.height;
+#if defined(__x86_64__) || defined(_M_X64)
+                struct _GsCOORDUNIT *d18 = (struct _GsCOORDUNIT *)(uintptr_t)stage->field_D18;
+                if (d18) {
+                    d18->rot.vx = 0;
+                    d18->rot.vy = 0;
+                    d18->rot.vz = 0;
+                    d18->matrix.t[0] = 0;
+                    d18->matrix.t[1] = height;
+                    d18->matrix.t[2] = 0;
+                }
+                func_8005922C(d18, 0);
+#else
                 if (stage->field_D18) {
                     stage->field_D18->rot.vx = 0;
                     stage->field_D18->rot.vy = 0;
@@ -151,6 +176,7 @@ s32 ModelDebug_UpdateController(void)
                     stage->field_D18->matrix.t[2] = 0;
                 }
                 func_8005922C(stage->field_D18, 0);
+#endif
             }
         }
     } else if (gInput_wPad1Repeat & 0x5000) {

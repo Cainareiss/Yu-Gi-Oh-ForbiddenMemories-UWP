@@ -53,6 +53,12 @@ int Platform_RestartGame(void)
 }
 #endif
 
+#ifdef MEMORIES_UWP
+extern void UWP_LogMessage(const char *msg);
+#else
+#define UWP_LogMessage(msg) ((void)0)
+#endif
+
 extern int Main_Init(void);
 
 /* The game, once the port has its startup picture of the game data (a save
@@ -60,8 +66,15 @@ extern int Main_Init(void);
  * text entries come after it, so a state keeps its own (entry_layout.h). */
 static int start_game(void)
 {
+    UWP_LogMessage("[START_GAME] start_game entered");
+    UWP_LogMessage("[START_GAME] Calling TextEntries_Start()...");
     TextEntries_Start();
-    return Main_Init();
+    UWP_LogMessage("[START_GAME] TextEntries_Start() done, calling Main_Init()...");
+    int res = Main_Init();
+    char buf[64];
+    snprintf(buf, sizeof(buf), "[START_GAME] Main_Init() returned: %d", res);
+    UWP_LogMessage(buf);
+    return res;
 }
 
 /* The game's executable: the file named on the command line (development),
@@ -120,6 +133,50 @@ void Psx___main(void)
 {
 }
 
+extern void UWP_LogMessage(const char *msg);
+
+int Memories_UWP_Main(void)
+{
+    UWP_LogMessage("[CORE] Memories_UWP_Main entered");
+    Log_Init();
+    Crash_Init();
+    if (Memories_GuestMap() != 0) {
+        UWP_LogMessage("[CORE] Memories_GuestMap FAILED");
+        return 1;
+    }
+    UWP_LogMessage("[CORE] Memories_GuestMap OK");
+    {
+        int loaded = load_game(NULL);
+        if (loaded) {
+            char buf[128];
+            snprintf(buf, sizeof(buf), "[CORE] load_game failed with code: %d", loaded);
+            UWP_LogMessage(buf);
+            return loaded > 0 ? 0 : 1;
+        }
+    }
+    UWP_LogMessage("[CORE] load_game OK");
+    if (Memories_ModulesInit() != 0) {
+        UWP_LogMessage("[CORE] Memories_ModulesInit FAILED");
+        return 1;
+    }
+    UWP_LogMessage("[CORE] Memories_ModulesInit OK");
+    if (Platform_Open("Yu-Gi-Oh! Forbidden Memories") != 0) {
+        UWP_LogMessage("[CORE] Platform_Open FAILED");
+        return 1;
+    }
+    UWP_LogMessage("[CORE] Platform_Open OK, building cards and text...");
+    Text_Build();
+    Cards_Build();
+    Text_SortCards();
+    UWP_LogMessage("[CORE] Calling Memories_StateRunGame(start_game)...");
+    int res = Memories_StateRunGame(start_game);
+    char buf[128];
+    snprintf(buf, sizeof(buf), "[CORE] Memories_StateRunGame finished with: %d", res);
+    UWP_LogMessage(buf);
+    return res;
+}
+
+#ifndef MEMORIES_UWP
 int main(int argc, char **argv)
 {
 #ifdef _WIN32
@@ -174,3 +231,4 @@ int main(int argc, char **argv)
     /* The game runs on a stack at a fixed address; see state.h. */
     return Memories_StateRunGame(start_game);
 }
+#endif

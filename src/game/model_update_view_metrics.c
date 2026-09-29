@@ -77,12 +77,23 @@ static __inline__ void setup_rotation(
     *copy = *source;
 
     unit->flg = 0;
+#if defined(__x86_64__) || defined(_M_X64)
+#define D18_ROT (((struct _GsCOORDUNIT *)(uintptr_t)(((volatile ModelSlot *)D_800F2C40)->field_D18))->rot)
+    unit->rot.vx =
+        turn - D18_ROT.vx;
+    unit->rot.vy =
+        turn - D18_ROT.vy;
+    unit->rot.vz =
+        turn - (u16)D18_ROT.vz;
+#undef D18_ROT
+#else
     unit->rot.vx =
         turn - ((volatile ModelSlot *)D_800F2C40)->field_D18->rot.vx;
     unit->rot.vy =
         turn - ((volatile ModelSlot *)D_800F2C40)->field_D18->rot.vy;
     unit->rot.vz =
         turn - (u16)((volatile ModelSlot *)D_800F2C40)->field_D18->rot.vz;
+#endif
     RotMatrixZXY(&unit->rot, &unit->matrix);
 }
 

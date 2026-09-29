@@ -12,4 +12,10 @@
 void Pgxp_AddPrim(const void *packet);
 #undef addPrim
 #define addPrim(ot, p) setaddr(p, getaddr(ot)), setaddr(ot, p), Pgxp_AddPrim(p)
+
+#ifdef MEMORIES_UWP
+#define EnterCriticalSection Psx_EnterCriticalSection
+#define ExitCriticalSection Psx_ExitCriticalSection
+#endif
+
 #endif

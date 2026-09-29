@@ -82,9 +82,11 @@ typedef struct {
     u8 unknown4A[0x0A];
 } __attribute__((packed)) AlternateLocationState;
 
+#if !defined(__x86_64__) && !defined(_M_X64)
 typedef char AlternateLocationState_size_must_be_0x54[
     sizeof(AlternateLocationState) == 0x54 ? 1 : -1
 ];
+#endif
 
 /* The three symbols both sources share. The comments above already name two
  * of them while describing the layouts, so the declarations belong here too.

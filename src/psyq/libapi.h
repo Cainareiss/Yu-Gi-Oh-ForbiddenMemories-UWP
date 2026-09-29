@@ -80,6 +80,10 @@ extern void DisablePAD(void);
 
 extern void FlushCache(void);
 extern void ReturnFromException(void);
+#ifdef MEMORIES_UWP
+#define EnterCriticalSection Psx_EnterCriticalSection
+#define ExitCriticalSection Psx_ExitCriticalSection
+#endif
 extern int  EnterCriticalSection(void);
 extern void ExitCriticalSection(void);
 extern void Exception(void);

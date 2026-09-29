@@ -1,6 +1,9 @@
 #ifndef YUGIOH_TYPES_H
 #define YUGIOH_TYPES_H
 
+#include <stddef.h>
+#include <stdint.h>
+
 typedef signed char s8;
 typedef unsigned char u8;
 typedef signed short s16;

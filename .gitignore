@@ -24,3 +24,22 @@
 # Tool-generated language caches
 **/__pycache__/
 *.py[cod]
+
+*.zip
+*.msix
+*.obj
+build_x64/
+uwp/**/x64/
+uwp/**/Release/
+uwp/**/Debug/
+uwp/**/bin/
+uwp/**/obj/
+uwp/packages/
+uwp/staging/
+uwp/*.msix
+
+
+uwp/**/AppPackages/
+uwp/**/Generated Files/
+uwp/imgui/.git/
+

@@ -16,7 +16,11 @@ struct DuelFieldEffectObject {
     u8 pad_1E[4];
     u8 timer;
     u8 pad_23;
+#if defined(__x86_64__) || defined(_M_X64)
+    u32 callback;
+#else
     void (*callback)(DuelFieldEffectObject *);
+#endif
     u8 pad_28[0x3F];
     u8 mark;
     u8 pad_68[2];
@@ -26,7 +30,7 @@ struct DuelFieldEffectObject {
 };
 
 #define DUEL_FIELD_EFFECT_OBJECT_OFFSET(member) \
-    ((u32)&(((DuelFieldEffectObject *)0)->member))
+    ((size_t)&(((DuelFieldEffectObject *)0)->member))
 
 typedef char DuelFieldEffectObject_size_must_be_0x70[
     sizeof(DuelFieldEffectObject) == 0x70 ? 1 : -1

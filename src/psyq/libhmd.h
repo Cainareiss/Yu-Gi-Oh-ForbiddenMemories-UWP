@@ -27,7 +27,11 @@ typedef struct _GsCOORDUNIT {
 	MATRIX			matrix;
 	MATRIX			workm;
 	SVECTOR			rot;
+#if defined(__x86_64__) || defined(_M_X64)
+	u32			super;
+#else
 	struct _GsCOORDUNIT	*super;
+#endif
 }	GsCOORDUNIT;
 
 typedef struct {

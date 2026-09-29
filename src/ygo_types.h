@@ -9,15 +9,20 @@
  * address-block prefix, not a homogeneous arena table or a payload layout.
  * The remaining module, data-argument and SU words keep separate labels. */
 typedef struct {
+#if defined(__x86_64__) || defined(_M_X64)
+    u32 payload_bases[3];
+    u32 primary_modules[2];
+#else
     u8 *payload_bases[3];
     u8 *primary_modules[2];
+#endif
 } HighMemoryModelAddressPrefix;
 
 typedef char HighMemoryModelAddressPrefix_size_must_be_0x14[
     sizeof(HighMemoryModelAddressPrefix) == 0x14 ? 1 : -1
 ];
 typedef char HighMemoryModelAddressPrefix_modules_offset_must_be_0xC[
-    (u32)&(((HighMemoryModelAddressPrefix *)0)->primary_modules) == 0xC ? 1 : -1
+    (size_t)&(((HighMemoryModelAddressPrefix *)0)->primary_modules) == 0xC ? 1 : -1
 ];
 
 typedef struct {
@@ -210,9 +215,11 @@ typedef union {
     } parts;
 } PasswordGlyphCoordinates;
 
+#if !defined(__x86_64__) && !defined(_M_X64)
 typedef char DuelCardRenderHolder_size_must_be_0x1C[
     sizeof(DuelCardRenderHolder) == 0x1C ? 1 : -1
 ];
+#endif
 typedef char ModelAnimationSample_size_must_be_0x12[
     sizeof(ModelAnimationSample) == 0x12 ? 1 : -1
 ];
@@ -301,7 +308,7 @@ typedef struct {
     void **handler;
 } ModelHandlerObject;
 
-#define YGO_TYPE_OFFSET(type, member) ((u32)&(((type *)0)->member))
+#define YGO_TYPE_OFFSET(type, member) ((size_t)&(((type *)0)->member))
 
 /* Shared text/effect node. The word members preserve the alignment required
    by the resident compactor's whole-entry lw/sw copies. */
@@ -401,6 +408,7 @@ struct DuelEffectChannel;
 typedef void (*SceneScriptRecordCallback)(void *, s32);
 typedef void (*TextBoxStateCallback)(struct DuelEffectChannel *);
 
+#if !defined(__x86_64__) && !defined(_M_X64)
 typedef char TextStreamOwner_stream_index_offset_must_be_0x58[
     YGO_TYPE_OFFSET(TextStreamOwner, stream_index) == 0x58 ? 1 : -1
 ];
@@ -416,6 +424,7 @@ typedef char ScriptImageEntry_size_must_be_0x14[
 typedef char ScriptImageEntry_field_10_offset_must_be_0x10[
     YGO_TYPE_OFFSET(ScriptImageEntry, field_10) == 0x10 ? 1 : -1
 ];
+#endif
 
 struct DisplayObject;
 
@@ -447,6 +456,7 @@ typedef struct {
     struct DisplayObject *render;
 } LibraryMotionState;
 
+#if !defined(__x86_64__) && !defined(_M_X64)
 typedef char LibraryMotionState_x_offset_must_be_0x8[
     YGO_TYPE_OFFSET(LibraryMotionState, x) == 0x8 ? 1 : -1
 ];
@@ -462,6 +472,7 @@ typedef char LibraryMotionState_render_offset_must_be_0x44[
 typedef char LibraryMotionState_size_must_be_0x48[
     sizeof(LibraryMotionState) == 0x48 ? 1 : -1
 ];
+#endif
 
 /* One text-box record, 0x64 bytes, the element type of D_800EB0F8. 0x00 is the
    decoded string the record is playing back (TextBox_BuildStep stores it
@@ -504,15 +515,7 @@ typedef struct DuelEffectChannel {
     u8 pad_16[10];
     DuelEffectEntry *entry_end_20;
     DuelEffectEntry *entry_head_24;
-    /* Every consumer proves this is a DisplayObject pointer:
-       func_800391E4 and Script_OpSavePrompt cast it, card-list text
-       reaches ->flags through it, and Dialog_UpdateChoice used to read it
-       through a pointer cast. */
     struct DisplayObject *field_28;
-    /* The second owned display object has the same evidence: producers store
-       the object they just built and consumers release it through
-       DisplayObject_ReleaseIfPresent. Integer-looking field_2C writes elsewhere belong to the
-       unrelated DuelEffectResourceRecord. */
     struct DisplayObject *field_2C;
     struct DisplayObject *field_30;
     u16 flags_34;
@@ -554,6 +557,7 @@ typedef struct DuelEffectChannel {
     u8 pad_63;
 } DuelEffectChannel;
 
+#if !defined(__x86_64__) && !defined(_M_X64)
 typedef char DuelEffectChannel_size_must_be_0x64[
     sizeof(DuelEffectChannel) == 0x64 ? 1 : -1
 ];
@@ -602,6 +606,7 @@ typedef char DuelEffectChannel_range_start_5C_offset_must_be_0x5C[
 typedef char DuelEffectChannel_field_61_offset_must_be_0x61[
     YGO_TYPE_OFFSET(DuelEffectChannel, field_61) == 0x61 ? 1 : -1
 ];
+#endif
 
 typedef void (*NameEntryGlyphUpdate)(u8 *sprite);
 
@@ -625,6 +630,7 @@ typedef struct {
     u8 sequence;
 } GlyphSprite;
 
+#if !defined(__x86_64__) && !defined(_M_X64)
 typedef char GlyphSprite_size_must_be_0x6C[
     sizeof(GlyphSprite) == 0x6C ? 1 : -1
 ];
@@ -643,6 +649,7 @@ typedef char GlyphSprite_frame_offset_must_be_0x60[
 typedef char GlyphSprite_sequence_offset_must_be_0x6A[
     YGO_TYPE_OFFSET(GlyphSprite, sequence) == 0x6A ? 1 : -1
 ];
+#endif
 
 /* Dialog panel reached through the text box, not the keyboard selection
    frame. slide is signed distance remaining on the panel's own transition. */
@@ -778,9 +785,11 @@ typedef struct {
     u8 unknown4DE[0xB2];
 } PasswordModuleState;
 
+#if !defined(__x86_64__) && !defined(_M_X64)
 typedef char PasswordModuleState_size_must_be_0x190[
     sizeof(PasswordModuleState) == 0x190 ? 1 : -1
 ];
+#endif
 typedef char SelectionFrame_priority_offset_must_be_0x14[
     YGO_TYPE_OFFSET(SelectionFrame, priority) == 0x14 ? 1 : -1
 ];
@@ -964,6 +973,7 @@ struct FileTransferDescriptor {
     u8 substate;
 };
 
+#if !defined(__x86_64__) && !defined(_M_X64)
 typedef char FileTransferDescriptor_size_must_be_0x48[
     sizeof(FileTransferDescriptor) == 0x48 ? 1 : -1
 ];
@@ -1006,6 +1016,7 @@ typedef char FileTransferDescriptor_done_offset_must_be_0x46[
 typedef char FileTransferDescriptor_substate_offset_must_be_0x47[
     YGO_TYPE_OFFSET(FileTransferDescriptor, substate) == 0x47 ? 1 : -1
 ];
+#endif
 
 #define FILE_TRANSFER_DESCRIPTOR_WORD_COUNT 18
 
@@ -1016,9 +1027,11 @@ typedef struct {
     s32 value[FILE_TRANSFER_DESCRIPTOR_WORD_COUNT];
 } FileTransferDescriptorWords;
 
+#if !defined(__x86_64__) && !defined(_M_X64)
 typedef char FileTransferDescriptorWords_size_must_match_descriptor[
     sizeof(FileTransferDescriptorWords) == sizeof(FileTransferDescriptor) ? 1 : -1
 ];
+#endif
 
 /* Sound's staged command and the loader's two request slots are the same
    record: func_80045514 passes it to func_80014C40 for a 0x20-byte copy. */
@@ -1179,33 +1192,35 @@ typedef struct {
     s16 field_5A;
 } DisplayObjectStreamState;
 
+#if !defined(__x86_64__) && !defined(_M_X64)
 typedef char DisplayObjectStreamState_size_must_be_0x5C[
     sizeof(DisplayObjectStreamState) == 0x5C ? 1 : -1
 ];
 typedef char DisplayObjectStreamState_field_22_offset_must_be_0x22[
-    (u32)&((DisplayObjectStreamState *)0)->field_22 == 0x22 ? 1 : -1
+    (size_t)&((DisplayObjectStreamState *)0)->field_22 == 0x22 ? 1 : -1
 ];
 typedef char DisplayObjectStreamState_field_48_offset_must_be_0x48[
-    (u32)&((DisplayObjectStreamState *)0)->field_48 == 0x48 ? 1 : -1
+    (size_t)&((DisplayObjectStreamState *)0)->field_48 == 0x48 ? 1 : -1
 ];
 typedef char DisplayObjectStreamState_field_4A_offset_must_be_0x4A[
-    (u32)&((DisplayObjectStreamState *)0)->field_4A == 0x4A ? 1 : -1
+    (size_t)&((DisplayObjectStreamState *)0)->field_4A == 0x4A ? 1 : -1
 ];
 typedef char DisplayObjectStreamState_field_4C_offset_must_be_0x4C[
-    (u32)&((DisplayObjectStreamState *)0)->field_4C == 0x4C ? 1 : -1
+    (size_t)&((DisplayObjectStreamState *)0)->field_4C == 0x4C ? 1 : -1
 ];
 typedef char DisplayObjectStreamState_current_offset_must_be_0x50[
-    (u32)&((DisplayObjectStreamState *)0)->current == 0x50 ? 1 : -1
+    (size_t)&((DisplayObjectStreamState *)0)->current == 0x50 ? 1 : -1
 ];
 typedef char DisplayObjectStreamState_base_offset_must_be_0x54[
-    (u32)&((DisplayObjectStreamState *)0)->base == 0x54 ? 1 : -1
+    (size_t)&((DisplayObjectStreamState *)0)->base == 0x54 ? 1 : -1
 ];
 typedef char DisplayObjectStreamState_field_58_offset_must_be_0x58[
-    (u32)&((DisplayObjectStreamState *)0)->field_58 == 0x58 ? 1 : -1
+    (size_t)&((DisplayObjectStreamState *)0)->field_58 == 0x58 ? 1 : -1
 ];
 typedef char DisplayObjectStreamState_field_5A_offset_must_be_0x5A[
-    (u32)&((DisplayObjectStreamState *)0)->field_5A == 0x5A ? 1 : -1
+    (size_t)&((DisplayObjectStreamState *)0)->field_5A == 0x5A ? 1 : -1
 ];
+#endif
 
 typedef struct {
     u32 field_00;
@@ -1222,7 +1237,7 @@ typedef char DuelStatusDigitPacket_size_must_be_0x18[
     sizeof(DuelStatusDigitPacket) == 0x18 ? 1 : -1
 ];
 typedef char DuelStatusDigitPacket_field_14_offset_must_be_0x14[
-    (u32)&((DuelStatusDigitPacket *)0)->field_14 == 0x14 ? 1 : -1
+    (size_t)&((DuelStatusDigitPacket *)0)->field_14 == 0x14 ? 1 : -1
 ];
 
 /* Two words written together as a pair. free_duel/screen_runtime.c and
@@ -1275,8 +1290,10 @@ typedef struct {
     u8 pad_08[4];
 } ValueSetupEntry;
 
+#if !defined(__x86_64__) && !defined(_M_X64)
 typedef char ValueSetupEntry_size_must_be_0xC[
     sizeof(ValueSetupEntry) == 0xC ? 1 : -1
 ];
+#endif
 
 #endif

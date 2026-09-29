@@ -27,6 +27,7 @@ typedef struct {
     u8 pad_3E[2];
 } DuelResultDisplayState;
 
+#if !defined(__x86_64__) && !defined(_M_X64)
 typedef char DuelResultDisplayState_children_offset_must_be_0x4[
     DUEL_RESULT_DISPLAY_OFFSET(children) == 0x4 ? 1 : -1
 ];
@@ -48,6 +49,7 @@ typedef char DuelResultDisplayState_dropped_card_id_offset_must_be_0x3C[
 typedef char DuelResultDisplayState_size_must_be_0x40[
     sizeof(DuelResultDisplayState) == 0x40 ? 1 : -1
 ];
+#endif
 
 #undef DUEL_RESULT_DISPLAY_OFFSET
 

@@ -37,6 +37,7 @@ typedef struct BuildDeckTransitionState {
     u8 pad_6343;
 } BuildDeckTransitionState;
 
+#if !defined(__x86_64__) && !defined(_M_X64)
 typedef char BuildDeckTransitionState_target_offset_must_be_0x5AA4[
     BUILD_DECK_TRANSITION_STATE_OFFSET(viewport_target_x) == 0x5AA4 + 2 * BUILD_DECK_LIST_GROWTH ? 1 : -1
 ];
@@ -73,6 +74,7 @@ typedef char BuildDeckTransitionState_size_must_be_0x6344[
     sizeof(BuildDeckTransitionState) ==
         0x6344 + 2 * BUILD_DECK_LIST_GROWTH + 3 * BUILD_DECK_TABLE_GROWTH ? 1 : -1
 ];
+#endif
 
 #undef BUILD_DECK_TRANSITION_STATE_OFFSET
 

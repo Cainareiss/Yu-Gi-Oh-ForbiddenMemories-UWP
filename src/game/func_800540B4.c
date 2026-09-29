@@ -305,6 +305,17 @@ void func_800540B4(s32 index)
             found = 0;
             n = slot->field_E1B;
             for (; k < n; k++) {
+#if defined(__x86_64__) || defined(_M_X64)
+                ModelSlotPart *part_k = (ModelSlotPart *)(uintptr_t)slot->field_1E0[k];
+                if (part_k->rewrite_idx == idx) {
+                    if (part_k->aframe == 0xFFFF
+                        && ((slot->field_BEC[k / 8] >> (k % 8)) & 1)
+                        && slot->field_750[slot->field_BF5].values[k] != 0) {
+                        found = 1;
+                    }
+                    break;
+                }
+#else
                 if (slot->field_1E0[k]->rewrite_idx == idx) {
                     if (slot->field_1E0[k]->aframe == 0xFFFF
                         && ((slot->field_BEC[k / 8] >> (k % 8)) & 1)
@@ -313,6 +324,7 @@ void func_800540B4(s32 index)
                     }
                     break;
                 }
+#endif
             }
             if (found) {
                 ScaleMatrix(
@@ -401,9 +413,17 @@ void func_800540B4(s32 index)
             y /= count;
             z /= count;
         } else {
+#if defined(__x86_64__) || defined(_M_X64)
+#define D1C_WORKM (((struct _GsCOORDUNIT *)(uintptr_t)slot->field_D1C)->workm)
+            x = D1C_WORKM.t[0];
+            y = D1C_WORKM.t[1];
+            z = D1C_WORKM.t[2];
+#undef D1C_WORKM
+#else
             x = slot->field_D1C->workm.t[0];
             y = slot->field_D1C->workm.t[1];
             z = slot->field_D1C->workm.t[2];
+#endif
         }
         x = Model_MirrorOffset(index, x, blk[4] * 0x10);
         slot->field_DD0[0] = x;
@@ -450,7 +470,11 @@ void func_800540B4(s32 index)
         if (count != 0) {
             y /= count;
         } else {
+#if defined(__x86_64__) || defined(_M_X64)
+            y = ((struct _GsCOORDUNIT *)(uintptr_t)slot->field_D1C)->workm.t[1];
+#else
             y = slot->field_D1C->workm.t[1];
+#endif
         }
         slot->field_DD0[3] = (y - 700) / 3 + blk[5] * 0x10;
         w = maxx - minx;
@@ -567,7 +591,11 @@ void func_800540B4(s32 index)
             if (D_8009AF92 != 0x8000) {
                 y = (s16)D_8009AF92;
             } else {
+#if defined(__x86_64__) || defined(_M_X64)
+                y = ((struct _GsCOORDUNIT *)(uintptr_t)D_800F2C40[2].field_D18)->matrix.t[1] + S(D_8009AF88, 0xA2);
+#else
                 y = D_800F2C40[2].field_D18->matrix.t[1] + S(D_8009AF88, 0xA2);
+#endif
             }
             a = w / 2;
             b = d / 2;

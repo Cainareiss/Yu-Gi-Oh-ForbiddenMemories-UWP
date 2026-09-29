@@ -9,9 +9,11 @@ typedef struct {
     s16 image_id;
 } ScriptImageObjectSet;
 
+#if !defined(__x86_64__) && !defined(_M_X64)
 typedef char ScriptImageObjectSet_image_id_offset_must_be_0x3C[
     (u32)&((ScriptImageObjectSet *)0)->image_id == 0x3C ? 1 : -1
 ];
+#endif
 
 /* Three of the scene script's image slots at D_800EAE98, as
  * ScriptImage_ReleaseObjects

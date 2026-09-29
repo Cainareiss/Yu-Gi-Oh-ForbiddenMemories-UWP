@@ -37,11 +37,17 @@ extern GsOT *D_800E9D98;
  * `lw $v0; sw $v0, N($sp)` both targets show. */
 extern GsOT *D_800E9D9C;
 
+#if !defined(__x86_64__) && !defined(_M_X64)
 typedef char OrderingTable_descriptor_size_must_be_0x14[
     sizeof(GsOT) == 0x14 ? 1 : -1
 ];
+#endif
 typedef char OrderingTable_slots_size_must_be_0x10[
+#if defined(__x86_64__) || defined(_M_X64)
+    sizeof(D_800E9D90) == 0x20 ? 1 : -1
+#else
     sizeof(D_800E9D90) == 0x10 ? 1 : -1
+#endif
 ];
 
 #endif

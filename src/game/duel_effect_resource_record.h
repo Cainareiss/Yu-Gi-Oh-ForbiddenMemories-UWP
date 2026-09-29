@@ -48,6 +48,7 @@ typedef struct DuelEffectResourceRecord {
     u8 pad_3D[3];
 } DuelEffectResourceRecord;
 
+#if !defined(__x86_64__) && !defined(_M_X64)
 typedef char DuelEffectResourceRecord_size_must_be_0x40[
     sizeof(DuelEffectResourceRecord) == 0x40 ? 1 : -1
 ];
@@ -67,6 +68,7 @@ typedef char DuelEffectResourceRecord_field_3A_offset_must_be_0x3A[
 typedef char DuelEffectResourceRecord_field_3C_offset_must_be_0x3C[
     DUEL_EFFECT_RESOURCE_RECORD_OFFSET(field_3C) == 0x3C ? 1 : -1
 ];
+#endif
 
 /* The array itself. Seven sources declared it identically and all seven
  * already include this header, which exists to describe one of its entries,

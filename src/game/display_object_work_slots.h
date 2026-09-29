@@ -6,6 +6,7 @@
 
 #define DISPLAY_OBJECT_WORK_SLOT_COUNT 5
 
+#if !defined(__x86_64__) && !defined(_M_X64)
 typedef char DisplayObjectWorkSlots_span_must_be_0x14[
     sizeof(DisplayObject *) * DISPLAY_OBJECT_WORK_SLOT_COUNT == 0x14 ? 1 : -1
 ];
@@ -29,6 +30,7 @@ typedef char DisplayObjectWorkSlots_scale_offsets_must_match[
     DISPLAY_OBJECT_WORK_OFFSET(field_44.h.field_46) == 0x46 ? 1 : -1
 ];
 #undef DISPLAY_OBJECT_WORK_OFFSET
+#endif
 
 /* Shared scratch slots, not an owning object pool. Duel animation uses two,
  * the Exodia presentation uses five, and trade uses the first. Keep the
@@ -54,12 +56,14 @@ typedef union {
     } ritual;
 } DisplayObjectRitualWorkArea;
 
+#if !defined(__x86_64__) && !defined(_M_X64)
 typedef char DisplayObjectRitualWorkArea_size_must_be_0x18[
     sizeof(DisplayObjectRitualWorkArea) == 0x18 ? 1 : -1
 ];
 typedef char DisplayObjectRitualWorkArea_result_offset_must_be_8[
     (u32)&((DisplayObjectRitualWorkArea *)0)->ritual.result == 8 ? 1 : -1
 ];
+#endif
 extern DisplayObjectRitualWorkArea D_800E9EF0;
 #else
 extern DisplayObject *D_800E9EF0[];

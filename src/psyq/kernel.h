@@ -146,7 +146,11 @@ struct DIRENTRY {
 	char name[20];
 	long attr;
 	long size;
+#if defined(__x86_64__) || defined(_M_X64)
+	unsigned int next;
+#else
 	struct DIRENTRY *next;
+#endif
 	long head;
 	char system[4];
 };

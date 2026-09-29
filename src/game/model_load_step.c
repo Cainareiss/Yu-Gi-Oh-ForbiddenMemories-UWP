@@ -90,6 +90,18 @@ void func_80056828(s32 index)
     }
     case 5: {
         ModelSlot *p = &D_800F2C40[index];
+#if defined(__x86_64__) || defined(_M_X64)
+        s32 i;
+        for (i = 0; i < p->field_E1B; i++) {
+            ModelSlotPart *part = (ModelSlotPart *)(uintptr_t)p->field_1E0[i];
+            part->ii = 0xFFFF;
+            part->ti = part->start;
+            part->aframe = 0xFFFF;
+            part->sid = part->start_sid;
+            part->rframe = 0;
+            part->speed = 0x10;
+        }
+#else
         ModelSlotPart **part = p->field_1E0;
         s32 i;
         for (i = 0; i < p->field_E1B; i++) {
@@ -101,6 +113,7 @@ void func_80056828(s32 index)
             (*part)->speed = 0x10;
             part++;
         }
+#endif
         break;
     }
     case 6:
@@ -160,7 +173,11 @@ void func_80056828(s32 index)
         for (i = 0; i < p->field_E1B; i++) {
             s32 current = p->field_BF5;
             if (selected != 0) {
+#if defined(__x86_64__) || defined(_M_X64)
+                ((ModelSlotPart *)(uintptr_t)p->field_1E0[i])->sid = selected;
+#else
                 p->field_1E0[i]->sid = selected;
+#endif
                 current = selected;
             }
             func_8004DC38(p, i, current, position);

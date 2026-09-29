@@ -19,6 +19,7 @@
 #include <unistd.h>
 #ifdef _WIN32
 #include "pc/platform/win32.h"
+#include <process.h>
 #else
 #include <ucontext.h>
 #endif

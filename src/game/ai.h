@@ -5,7 +5,7 @@
 #include "ai_constants.h"
 #include "duel_grid.h"
 
-#define AI_SCRIPT_STATE_OFFSET(type, member) ((u32)&(((type *)0)->member))
+#define AI_SCRIPT_STATE_OFFSET(type, member) ((size_t)&(((type *)0)->member))
 
 typedef void (*AiScriptHandler)(void);
 
@@ -164,6 +164,7 @@ typedef char AiActiveCard_opponent_hand_must_start_at_slot_66[
 typedef char AiActiveCard_side_stride_must_be_55_records[
     AI_ACTIVE_CARD_SIDE_BYTE_STRIDE == 55 * sizeof(AiActiveCard) ? 1 : -1
 ];
+#if !defined(__x86_64__) && !defined(_M_X64)
 typedef char AiScriptState_size_must_be_0xD4[
     sizeof(AiScriptState) == 0xD4 ? 1 : -1
 ];
@@ -227,6 +228,7 @@ typedef char AiScriptState_fusion_used_offset_must_be_0xAA[
     AI_SCRIPT_STATE_OFFSET(AiScriptState, fusion_used) ==
         AI_SCRIPT_FUSION_USED_BYTE_OFFSET ? 1 : -1
 ];
+#endif
 typedef char AiSelection_size_must_be_0x0C[
     sizeof(AiSelection) == 0x0C ? 1 : -1
 ];

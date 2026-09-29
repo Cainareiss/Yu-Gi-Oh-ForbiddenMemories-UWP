@@ -16,7 +16,11 @@
     (*(u8 (*)[MEM_CARD_WORK_FRAME_SIZE])MEM_CARD_WORK_FRAME_ADDRESS)
 
 typedef struct {
+#if defined(__x86_64__) || defined(_M_X64)
+    u32 cursor;
+#else
     u8 *cursor;
+#endif
     u8 pad_04[8];
     u8 free_blocks;
     u8 entry_index;
@@ -54,15 +58,15 @@ typedef char MemCardWorkArea_size_must_be_0x4EC[
     sizeof(MemCardWorkArea) == 0x4EC ? 1 : -1
 ];
 typedef char MemCardWorkSlot_offsets_must_match[
-    (u32)&((MemCardWorkSlot *)0)->free_blocks == 0xC &&
-    (u32)&((MemCardWorkSlot *)0)->entry_index == 0xD ? 1 : -1
+    (size_t)&((MemCardWorkSlot *)0)->free_blocks == 0xC &&
+    (size_t)&((MemCardWorkSlot *)0)->entry_index == 0xD ? 1 : -1
 ];
 typedef char MemCardWorkRoot_offsets_must_match[
-    (u32)&((MemCardWorkRoot *)0)->blocks == 0x10 &&
-    (u32)&((MemCardWorkRoot *)0)->remaining == 0x12 &&
-    (u32)&((MemCardWorkRoot *)0)->offset == 0x14 &&
-    (u32)&((MemCardWorkRoot *)0)->chunk == 0x16 &&
-    (u32)&((MemCardWorkRoot *)0)->text_index == 0x1A ? 1 : -1
+    (size_t)&((MemCardWorkRoot *)0)->blocks == 0x10 &&
+    (size_t)&((MemCardWorkRoot *)0)->remaining == 0x12 &&
+    (size_t)&((MemCardWorkRoot *)0)->offset == 0x14 &&
+    (size_t)&((MemCardWorkRoot *)0)->chunk == 0x16 &&
+    (size_t)&((MemCardWorkRoot *)0)->text_index == 0x1A ? 1 : -1
 ];
 
 extern MemCardWorkArea D_800EF6D0;

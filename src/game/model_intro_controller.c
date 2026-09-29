@@ -894,6 +894,18 @@ void func_80050584(s32 arg0) {
                 }
             }
             s = D_800F2C40 + arg0;
+#if defined(__x86_64__) || defined(_M_X64)
+            struct _GsCOORDUNIT *d18 = (struct _GsCOORDUNIT *)(uintptr_t)s->field_D18;
+            if (d18 != (GsCOORDUNIT *)0) {
+                d18->rot.vx = 0;
+                d18->rot.vy = a;
+                d18->rot.vz = 0;
+                d18->matrix.t[0] = 0;
+                d18->matrix.t[1] = 0;
+                d18->matrix.t[2] = 0;
+            }
+            func_8005922C(d18, 0);
+#else
             if (s->field_D18 != (GsCOORDUNIT *)0) {
                 s->field_D18->rot.vx = 0;
                 s->field_D18->rot.vy = a;
@@ -903,6 +915,7 @@ void func_80050584(s32 arg0) {
                 s->field_D18->matrix.t[2] = 0;
             }
             func_8005922C(s->field_D18, 0);
+#endif
             Model_RunSlotHandlers(arg0);
             s->field_E15 = 0;
         }

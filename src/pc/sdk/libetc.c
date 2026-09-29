@@ -124,6 +124,11 @@ static void on_vblank(void)
     }
 }
 
+#ifdef MEMORIES_UWP
+#define EnterCriticalSection Psx_EnterCriticalSection
+#define ExitCriticalSection Psx_ExitCriticalSection
+#endif
+
 long EnterCriticalSection(void)
 {
     long was_enabled = !critical;

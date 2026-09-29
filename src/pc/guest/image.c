@@ -13,13 +13,17 @@
 #ifdef _WIN32
 #include "pc/platform/win32.h"
 #include <windows.h>
+#include <errhandlingapi.h>
+WINBASEAPI PVOID WINAPI AddVectoredExceptionHandler(ULONG First, PVECTORED_EXCEPTION_HANDLER Handler);
 #else
 #include <signal.h>
 #include <sys/mman.h>
 #include <ucontext.h>
 #endif
 
+#if !defined(__x86_64__) && !defined(_M_X64)
 _Static_assert(sizeof(void *) == 4, "the guest image model requires an ILP32 build");
+#endif
 
 /* The first 64 KiB. On the console that is kernel RAM, and retail code reaches
  * it through null pointers: CardList_CreateSlotTextBox clears a flag in
@@ -134,9 +138,28 @@ static void report_guest_fault(uint32_t address, uint32_t eip)
                           (unsigned)address, (unsigned)eip);
     }
     (void)!write(2, text, (size_t)length);
+#ifdef MEMORIES_UWP
+    extern void UWP_LogMessage(const char *msg);
+    UWP_LogMessage(text);
+#endif
 }
 
 #ifdef _WIN32
+#if defined(__x86_64__) || defined(_M_X64)
+static DWORD64 *context_register(CONTEXT *context, int number)
+{
+    switch (number) {
+    case 0: return &context->Rax;
+    case 1: return &context->Rcx;
+    case 2: return &context->Rdx;
+    case 3: return &context->Rbx;
+    case 4: return &context->Rsp;
+    case 5: return &context->Rbp;
+    case 6: return &context->Rsi;
+    default: return &context->Rdi;
+    }
+}
+#else
 static DWORD *context_register(CONTEXT *context, int number)
 {
     switch (number) {
@@ -150,11 +173,13 @@ static DWORD *context_register(CONTEXT *context, int number)
     default: return &context->Edi;
     }
 }
+#endif
 
 /* The common low access, a plain 32-bit MOV to or from [base + disp], is
  * done here through guest RAM instead of the rebase-and-single-step path:
  * 32-bit processes on 64-bit Windows can mishandle the trap when the
  * instruction's destination is its own base register. Returns 1 if done. */
+#if !defined(__x86_64__) && !defined(_M_X64)
 static int emulate_low_mov(CONTEXT *context, uint32_t address)
 {
     const unsigned char *code = (const unsigned char *)(uintptr_t)context->Eip;
@@ -179,6 +204,7 @@ static int emulate_low_mov(CONTEXT *context, uint32_t address)
     context->Eip += 2u + (mod == 1 ? 1u : mod == 2 ? 4u : 0u);
     return 1;
 }
+#endif
 
 /* First in line for every exception in the process: take the guest's own
  * faults, leave everything else to the next handler (win32.c reports what
@@ -189,6 +215,7 @@ static LONG CALLBACK on_guest_exception(EXCEPTION_POINTERS *pointers)
     CONTEXT *context = pointers->ContextRecord;
     uint32_t address;
     void *target;
+#if !defined(__x86_64__) && !defined(_M_X64)
     Win32_UndoInterruptedFault(context); /* then handled as the faulting instruction's own */
     /* A 32-bit process on 64-bit Windows may see the trap as WoW64's own
      * STATUS_WX86_SINGLE_STEP. */
@@ -236,6 +263,30 @@ static LONG CALLBACK on_guest_exception(EXCEPTION_POINTERS *pointers)
         (address >= MEMORIES_GUEST_RAM && address < MEMORIES_GUEST_RAM + 0x00800000u)) {
         report_guest_fault(address, context->Eip);
     }
+#else
+#ifdef MEMORIES_UWP
+    if (record->ExceptionCode != 0x406D1388 && record->ExceptionCode != 0xE06D7363) {
+        char exc_buf[256];
+        snprintf(exc_buf, sizeof(exc_buf), "[EXC-GUEST] Code=0x%08lX at RIP=0x%llX, Info[1]=0x%llX",
+                 record->ExceptionCode, (unsigned long long)context->Rip,
+                 record->NumberParameters >= 2 ? (unsigned long long)record->ExceptionInformation[1] : 0ULL);
+        extern void UWP_LogMessage(const char *msg);
+        UWP_LogMessage(exc_buf);
+    }
+#endif
+    if (record->ExceptionCode != EXCEPTION_ACCESS_VIOLATION || record->NumberParameters < 2) {
+        return EXCEPTION_CONTINUE_SEARCH;
+    }
+    address = (uint32_t)record->ExceptionInformation[1];
+    if (context->Rip == (DWORD64)address && (target = guest_call_target(address)) != NULL) {
+        context->Rip = (DWORD64)(uintptr_t)target;
+        return EXCEPTION_CONTINUE_EXECUTION;
+    }
+    if (context->Rip == (DWORD64)address || address < 0x10000u ||
+        (address >= MEMORIES_GUEST_RAM && address < MEMORIES_GUEST_RAM + 0x00800000u)) {
+        report_guest_fault(address, (uint32_t)context->Rip);
+    }
+#endif
     return EXCEPTION_CONTINUE_SEARCH;
 }
 
@@ -250,27 +301,29 @@ static LONG CALLBACK on_guest_exception(EXCEPTION_POINTERS *pointers)
 static int view_at(HANDLE section, uint32_t address, size_t length, DWORD offset)
 {
     void *wanted = (void *)(uintptr_t)address;
-    if (MapViewOfFileEx(section, FILE_MAP_ALL_ACCESS, 0, offset, length, wanted) != wanted) {
-        fprintf(stderr, "cannot map guest memory at 0x%08x (error %lu)\n", (unsigned)address,
-                GetLastError());
-        return -1;
+#if !defined(__x86_64__) && !defined(_M_X64)
+    if (section && MapViewOfFileEx(section, FILE_MAP_ALL_ACCESS, 0, offset, length, wanted) == wanted) {
+        return 0;
     }
-    return 0;
+#endif
+    if (VirtualAlloc(wanted, length, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE) == wanted) {
+        return 0;
+    }
+    fprintf(stderr, "cannot map guest memory at 0x%08x (error %lu)\n", (unsigned)address,
+            GetLastError());
+    return -1;
 }
 
 int Memories_GuestMap(void)
 {
-    HANDLE section = CreateFileMappingA(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0,
-                                        MEMORIES_GUEST_RAM_SIZE, NULL);
     int result;
     AddVectoredExceptionHandler(1, on_guest_exception);
-    if (section == NULL) {
-        fprintf(stderr, "guest RAM: CreateFileMapping failed (error %lu)\n", GetLastError());
-        return -1;
-    }
+#if !defined(__x86_64__) && !defined(_M_X64)
+    HANDLE section = CreateFileMappingA(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0,
+                                        MEMORIES_GUEST_RAM_SIZE, NULL);
     /* The mirror first: tested on Windows 11, a view below 0x200000 fails
      * with ERROR_INVALID_ADDRESS once the high views exist. */
-    {
+    if (section != NULL) {
         uint32_t piece, held = 0;
         for (piece = 0x10000u; piece < MEMORIES_GUEST_RAM_SIZE; piece += 0x10000u) {
             if (MapViewOfFileEx(section, FILE_MAP_ALL_ACCESS, 0, piece, 0x10000u, (void *)(uintptr_t)piece) == NULL) {
@@ -284,13 +337,21 @@ int Memories_GuestMap(void)
     }
     result = view_at(section, MEMORIES_GUEST_RAM, MEMORIES_GUEST_RAM_SIZE, 0) ||
              view_at(section, 0xa0000000u, MEMORIES_GUEST_RAM_SIZE, 0);
+#else
+    result = view_at(NULL, MEMORIES_GUEST_RAM, MEMORIES_GUEST_RAM_SIZE, 0) ||
+             view_at(NULL, 0xa0000000u, MEMORIES_GUEST_RAM_SIZE, 0);
+#endif
     if (!result && VirtualAlloc((void *)0x1f800000u, 0x1000, MEM_RESERVE | MEM_COMMIT,
                                 PAGE_READWRITE) != (void *)0x1f800000u) {
         fprintf(stderr, "cannot map the scratchpad at 0x1f800000 (error %lu)\n", GetLastError());
         result = -1;
     }
+#if !defined(__x86_64__) && !defined(_M_X64)
     /* The views keep the section alive. */
-    CloseHandle(section);
+    if (section != NULL) {
+        CloseHandle(section);
+    }
+#endif
     return result ? -1 : 0;
 }
 #else
@@ -450,6 +511,12 @@ static void print_stub_summary(void)
 
 void Memories_Unimplemented(const char *name)
 {
+#ifdef MEMORIES_UWP
+    char stub_buf[256];
+    snprintf(stub_buf, sizeof(stub_buf), "[FATAL] Memories_Unimplemented called for: %s", name ? name : "unknown");
+    extern void UWP_LogMessage(const char *msg);
+    UWP_LogMessage(stub_buf);
+#endif
     static int registered;
     const char *break_name = getenv("MEMORIES_STUB_BREAK");
     unsigned i;

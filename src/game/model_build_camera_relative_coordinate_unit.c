@@ -29,12 +29,23 @@ void Model_BuildCameraRelativeCoordinateUnit(
     packed = raw;
 
     unit->flg = 0;
+#if defined(__x86_64__) || defined(_M_X64)
+#define D18_ROT(s) (((struct _GsCOORDUNIT *)(uintptr_t)(s)->field_D18)->rot)
+    unit->rot.vx =
+        (s16)(MODEL_ANGLE_FULL_TURN - D18_ROT(slot).vx);
+    unit->rot.vy =
+        (s16)(MODEL_ANGLE_FULL_TURN - D18_ROT(slot).vy);
+    unit->rot.vz =
+        (s16)(MODEL_ANGLE_FULL_TURN - D18_ROT(slot).vz);
+#undef D18_ROT
+#else
     unit->rot.vx =
         (s16)(MODEL_ANGLE_FULL_TURN - slot->field_D18->rot.vx);
     unit->rot.vy =
         (s16)(MODEL_ANGLE_FULL_TURN - slot->field_D18->rot.vy);
     unit->rot.vz =
         (s16)(MODEL_ANGLE_FULL_TURN - slot->field_D18->rot.vz);
+#endif
 
     RotMatrixZXY(&unit->rot, &unit->matrix);
     RotMatrix_gte(&packed, &sp20);

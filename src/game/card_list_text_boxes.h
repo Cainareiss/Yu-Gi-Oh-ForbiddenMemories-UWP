@@ -74,6 +74,7 @@ typedef struct CardList {
  * rows keep their distances from it. */
 #define CARD_LIST_ROWS_END (sizeof(CardEntry) * CARD_TABLE_ID_END)
 
+#if !defined(__x86_64__) && !defined(_M_X64)
 typedef char CardListAssertCursorBox[
     CARD_LIST_OFFSET(cursor_box) == CARD_LIST_ROWS_END + 0x4 ? 1 : -1
 ];
@@ -105,6 +106,7 @@ typedef char CardListAssertCursor[
    stride is this record's size, which is what the trailing padding after
    `cursor` accounts for. */
 typedef char CardListAssertSize[sizeof(CardList) == CARD_LIST_ROWS_END + 0x1C ? 1 : -1];
+#endif
 
 #undef CARD_LIST_OFFSET
 #undef CARD_LIST_ROWS_END

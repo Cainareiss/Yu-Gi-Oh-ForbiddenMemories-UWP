@@ -43,13 +43,21 @@
 #include "main_mode_state.h"
 #include "../psyq/libgs.h"
 
+#ifdef MEMORIES_UWP
+extern void UWP_LogMessage(const char *msg);
+#else
+#define UWP_LogMessage(x) ((void)0)
+#endif
+
 s32 Main_Init(void)
 {
     s32 r;
     s32 t;
     register GraphicsFrameBuffer *p;
 
+    UWP_LogMessage("[MAIN_INIT] Main_Init entered");
     __main();
+    UWP_LogMessage("[MAIN_INIT] __main() done");
     EnterCriticalSection();
     ResetCallback();
     GsInitVcount();
@@ -57,6 +65,7 @@ s32 Main_Init(void)
     StopCallback();
     SetMem(2);
     SetDispMask(0);
+    UWP_LogMessage("[MAIN_INIT] Display & memory configured");
     Fade_DisableOrderingTables();
     p = gGraphics_aFrameBuffers;
     D_8009B0CC = 0;
@@ -72,7 +81,9 @@ s32 Main_Init(void)
     *(u8 *)&D_8009B230 = 1;
     gGraphics_pActiveFrameBuffer = p;
     D_8009B0C4 = t;
+    UWP_LogMessage("[MAIN_INIT] Calling func_80013154 (Graphics init)...");
     func_80013154(p);
+    UWP_LogMessage("[MAIN_INIT] func_80013154 done");
     DisplayObject_Reset();
     Fade_Init();
     Main_ClearFrameServiceCallbacks();
@@ -81,20 +92,28 @@ s32 Main_Init(void)
     Text_InitDecimalDigitGlyphMap();
     SD_InitState(D_800E9EC0[0]);
     VSyncCallback(Main_VBlankCB);
+    UWP_LogMessage("[MAIN_INIT] Calling Sound_InitFrontend()...");
     Sound_InitFrontend();
+    UWP_LogMessage("[MAIN_INIT] Sound_InitFrontend() done");
     srand(RAND_BOOT_SEED);
     SetDispMask(1);
     Main_ResetFrontendRuntime();
     Main_ResetFrontendRuntime();
+    UWP_LogMessage("[MAIN_INIT] Calling Main_RunBootSequence(0)...");
     Main_RunBootSequence(0);
+    UWP_LogMessage("[MAIN_INIT] Main_RunBootSequence(0) done! Calling setjmp(D_800E9DC0)...");
     r = setjmp(D_800E9DC0);
+    UWP_LogMessage("[MAIN_INIT] setjmp returned!");
     Main_ResetFrontendRuntime();
     if (r != 0) {
+        UWP_LogMessage("[MAIN_INIT] Unwound from setjmp, requesting main menu package...");
         File_RequestMainMenuPackage();
         File_WaitForTransfers();
     }
+    UWP_LogMessage("[MAIN_INIT] Calling Main_RunFrontendLoop...");
     Main_ApplyMenuSelection(Main_RunFrontendLoop());
     D_8009B269 = 8;
+    UWP_LogMessage("[MAIN_INIT] Entering Main_Loop()...");
     Main_Loop();
     return 0;
 }

@@ -40,13 +40,23 @@ char *Memories_WideToUtf8(const wchar_t *wide)
     return text;
 }
 
+#if defined(MEMORIES_UWP)
+extern FILE *UWP_OpenFile(const wchar_t *path, const wchar_t *mode);
+extern int UWP_OpenFD(const wchar_t *path, int flags, int mode);
+extern int UWP_Access(const wchar_t *path, int mode);
+#endif
+
 FILE *Memories_Fopen(const char *path, const char *mode)
 {
     wchar_t *wide = Memories_Utf8ToWide(path), *wide_mode;
-    FILE *file;
+    FILE *file = NULL;
     if (!wide) return NULL;
     wide_mode = Memories_Utf8ToWide(mode);
+#if defined(MEMORIES_UWP)
+    file = wide_mode ? UWP_OpenFile(wide, wide_mode) : NULL;
+#else
     file = wide_mode ? _wfopen(wide, wide_mode) : NULL;
+#endif
     free(wide_mode); free(wide);
     return file;
 }
@@ -60,7 +70,11 @@ int Memories_Open(const char *path, int flags, ...)
         va_list args;
         va_start(args, flags); mode = va_arg(args, int); va_end(args);
     }
+#if defined(MEMORIES_UWP)
+    result = UWP_OpenFD(wide, flags, mode);
+#else
     result = _wopen(wide, flags, mode);
+#endif
     free(wide);
     return result;
 }
@@ -71,7 +85,11 @@ int Memories_Access(const char *path, int mode)
     int result;
     if (!wide) return -1;
     /* Windows has no execute bit; directory creation uses X_OK. */
+#if defined(MEMORIES_UWP)
+    result = UWP_Access(wide, mode & 6);
+#else
     result = _waccess(wide, mode & 6);
+#endif
     free(wide);
     return result;
 }

@@ -8,7 +8,7 @@
 #include "model.h"
 #include "func_8005922C.h"
 
-#define MODEL_UNIT_OFFSET(member) ((u32)&(((GsCOORDUNIT *)0)->member))
+#define MODEL_UNIT_OFFSET(member) ((size_t)&(((GsCOORDUNIT *)0)->member))
 
 /* The slot data entries at ModelSlot.entries, the record field_D18 points at
  * and the block func_800580D4 builds on the stack are all one type: libhmd's
@@ -37,7 +37,7 @@ extern char GsCOORDUNIT_super_offset_must_be_0x4C[
 /* ModelSlotPart is model.h's mirror of libhmd's GsSEQ, kept there so that
  * header does not need the libhmd chain. Every field agrees. */
 #define MODEL_SEQ_AGREES(member) \
-    ((u32)&(((ModelSlotPart *)0)->member) == (u32)&(((GsSEQ *)0)->member))
+    ((size_t)&(((ModelSlotPart *)0)->member) == (size_t)&(((GsSEQ *)0)->member))
 extern char ModelSlotPart_must_be_a_GsSEQ[
     sizeof(ModelSlotPart) == sizeof(GsSEQ) ? 1 : -1
 ];
@@ -56,6 +56,17 @@ extern char ModelSlotPart_seq_fields_must_agree[
 void func_8005A468(s32 arg0, s32 arg1)
 {
     ModelSlot *rec = &D_800F2C40[arg0];
+#if defined(__x86_64__) || defined(_M_X64)
+    u32 *p = rec->field_1E0;
+    s32 i = 0;
+    if (rec->field_E1B != 0) {
+        do {
+            ((ModelSlotPart *)(uintptr_t)(*p))->speed = arg1;
+            p++;
+            i++;
+        } while (i < rec->field_E1B);
+    }
+#else
     ModelSlotPart **p;
     s32 i;
 
@@ -68,6 +79,7 @@ void func_8005A468(s32 arg0, s32 arg1)
             i++;
         } while (i < rec->field_E1B);
     }
+#endif
 }
 
 /* Places the slot's own coordinate unit: translation into the local matrix's
@@ -75,6 +87,18 @@ void func_8005A468(s32 arg0, s32 arg1)
  * The unit pointer is reloaded per store, as retail does. */
 void func_8005A4C4(ModelSlot *e, int a, int b, int c, int d)
 {
+#if defined(__x86_64__) || defined(_M_X64)
+    struct _GsCOORDUNIT *d18 = (struct _GsCOORDUNIT *)(uintptr_t)e->field_D18;
+    if (d18) {
+        d18->rot.vx = 0;
+        d18->rot.vy = d;
+        d18->rot.vz = 0;
+        d18->matrix.t[0] = a;
+        d18->matrix.t[1] = b;
+        d18->matrix.t[2] = c;
+    }
+    func_8005922C(d18, 0);
+#else
     if (e->field_D18) {
         e->field_D18->rot.vx = 0;
         e->field_D18->rot.vy = d;
@@ -84,4 +108,5 @@ void func_8005A4C4(ModelSlot *e, int a, int b, int c, int d)
         e->field_D18->matrix.t[2] = c;
     }
     func_8005922C(e->field_D18, 0);
+#endif
 }

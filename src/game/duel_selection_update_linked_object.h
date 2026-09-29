@@ -9,9 +9,11 @@ typedef struct {
     u8 pad_04[DUEL_SELECTION_RECORD_SIZE - 4];
 } DuelSelectionDisplayRecord;
 
+#if !defined(__x86_64__) && !defined(_M_X64)
 typedef char DuelSelectionDisplayRecord_size_must_match_record_stride[
     sizeof(DuelSelectionDisplayRecord) == DUEL_SELECTION_RECORD_SIZE ? 1 : -1
 ];
+#endif
 
 void DuelSelection_UpdateLinkedObject(DisplayObject *object);
 

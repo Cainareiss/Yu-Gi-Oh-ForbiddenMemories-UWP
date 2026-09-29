@@ -209,7 +209,11 @@ void Script_OpSavePrompt(void)
         if ((flags & 0x800) == 0) {
             D_8009B27C = flags | 0x800;
             DisplayObject_SavePosition((DisplayObjectSnapshot *)obj);
+#if defined(__x86_64__) || defined(_M_X64)
+            *(s16 *)&((DisplayObject *)(uintptr_t)box->field_28)->field_60 = 0x400;
+#else
             *(s16 *)&box->field_28->field_60 = 0x400;
+#endif
         }
         step = *(u16 *)&obj->field_60 - 0x40;
         obj->field_60 = step;

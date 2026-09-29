@@ -10,11 +10,19 @@
 #define MAIN_MENU_TRADE_OFFER_CARD_COUNT 10
 
 typedef struct {
+#if defined(__x86_64__) || defined(_M_X64)
+    u32 background;
+    u32 title;
+    u32 prompt;
+    u32 unknown4564;
+    u32 entries[MAIN_MENU_ENTRY_COUNT];
+#else
     struct DisplayObject *background;
     struct DisplayObject *title;
     struct DisplayObject *prompt;
     u8 *unknown4564;
     u8 *entries[MAIN_MENU_ENTRY_COUNT];
+#endif
     u8 menuId;
     u8 pendingAction;
     u8 transitionMode;
@@ -26,19 +34,35 @@ typedef struct {
 } MainMenuFrontendState;
 
 typedef struct {
+#if defined(__x86_64__) || defined(_M_X64)
+    u32 unknown45A0;
+    u32 unknown45A4;
+    u32 unknown45A8;
+    u32 unknown45AC;
+    u32 widgets[3];
+#else
     struct DisplayObject *unknown45A0;
     struct DisplayObject *unknown45A4;
     struct DisplayObject *unknown45A8;
     struct DisplayObject *unknown45AC;
     struct DisplayObject *widgets[3];
+#endif
     u8 selections[3];
     u8 padBF;
     ValueSetupEntry entries[2];
+#if defined(__x86_64__) || defined(_M_X64)
+    u32 toggle;
+#else
     u8 *toggle;
+#endif
 } MainMenuValueSetupState;
 
 typedef struct {
+#if defined(__x86_64__) || defined(_M_X64)
+    u32 object;
+#else
     u8 *object;
+#endif
     s32 unknown;
 } MainMenuTradeSlot;
 
@@ -48,10 +72,17 @@ typedef struct {
 } MainMenuTradeScroll;
 
 typedef struct {
+#if defined(__x86_64__) || defined(_M_X64)
+    u32 display45DC;
+    u32 display45E0;
+    u32 unknown45E4;
+    u32 unknown45E8;
+#else
     u8 *display45DC;
     u8 *display45E0;
     u8 *unknown45E4;
     u8 *unknown45E8;
+#endif
     MainMenuTradeSlot displaySlots[MAIN_MENU_TRADE_SIDE_COUNT];
     CardCountEntry inventory[MAIN_MENU_TRADE_SIDE_COUNT][CARD_COUNT];
     MainMenuTradeScroll scroll[4];
@@ -69,8 +100,9 @@ extern MainMenuFrontendState gMainMenu_FrontendState;
 extern MainMenuValueSetupState gMainMenu_ValueSetupState;
 extern MainMenuTradeState gMainMenu_TradeState;
 
-#define MAIN_MENU_STATE_OFFSET(type, member) ((u32)&(((type *)0)->member))
+#define MAIN_MENU_STATE_OFFSET(type, member) ((size_t)&(((type *)0)->member))
 
+#if !defined(__x86_64__) && !defined(_M_X64)
 typedef char MainMenuFrontendState_size_must_be_0x48[
     sizeof(MainMenuFrontendState) == 0x48 ? 1 : -1
 ];
@@ -119,6 +151,7 @@ typedef char MainMenuTradeState_offers_offset_must_be_0x16C0[
 typedef char MainMenuTradeState_flags_offset_must_be_0x16EC[
     MAIN_MENU_STATE_OFFSET(MainMenuTradeState, inventoryReady) == 0x16EC ? 1 : -1
 ];
+#endif
 
 #undef MAIN_MENU_STATE_OFFSET
 

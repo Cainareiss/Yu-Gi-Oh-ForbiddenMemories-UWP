@@ -24,6 +24,7 @@ typedef struct DisplayParent {
     u8 index;
 } DisplayParent;
 
+#if !defined(__x86_64__) && !defined(_M_X64)
 typedef char DisplayLinkEntry_size_must_be_0xC[
     sizeof(DisplayLinkEntry) == 0xC ? 1 : -1
 ];
@@ -36,6 +37,7 @@ typedef char DisplayParent_index_offset_must_be_0x17[
 typedef char DisplayParent_size_must_be_0x18[
     sizeof(DisplayParent) == 0x18 ? 1 : -1
 ];
+#endif
 
 #undef DISPLAY_PARENT_OFFSET
 

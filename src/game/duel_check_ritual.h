@@ -7,7 +7,11 @@
 /* Optional ritual-match output: the three matched tribute display objects,
  * followed by a word the function clears. */
 typedef struct DuelRitualResult {
+#if defined(__x86_64__) || defined(_M_X64)
+    u32 tribute_objects[DUEL_RITUAL_TRIBUTE_COUNT];
+#else
     void *tribute_objects[DUEL_RITUAL_TRIBUTE_COUNT];
+#endif
     s32 field_0C;
 } DuelRitualResult;
 
@@ -15,7 +19,7 @@ typedef char DuelRitualResult_size_must_be_0x10[
     sizeof(DuelRitualResult) == 0x10 ? 1 : -1
 ];
 typedef char DuelRitualResult_clear_word_offset_must_be_0x0C[
-    (u32)&((DuelRitualResult *)0)->field_0C == 0x0C ? 1 : -1
+    (size_t)&((DuelRitualResult *)0)->field_0C == 0x0C ? 1 : -1
 ];
 
 /* The recipe table that Duel_CheckRitual walks.

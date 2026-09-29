@@ -2,12 +2,14 @@
 #include "glyphs.h"
 #include "pc/render/soft_gpu.h"
 #include "pc/debug/log.h"
+#ifndef NO_FREETYPE
 #include <ft2build.h>
 #include FT_FREETYPE_H
 #ifdef _WIN32
 #include "pc/platform/win32.h"
 #else
 #include <fontconfig/fontconfig.h>
+#endif
 #endif
 #include <stdio.h>
 #include <stdlib.h>
@@ -158,6 +160,7 @@ uint32_t Glyphs_Character(int code)
 
 /* --- fonts ---------------------------------------------------------------- */
 
+#ifndef NO_FREETYPE
 static FT_Library library;
 static FT_Face faces[8];
 static int face_count, system_tried;
@@ -209,6 +212,10 @@ static FT_Face face_for(uint32_t character)
     }
     return NULL;
 }
+#else
+void Glyphs_AddFont(const char *path) { (void)path; }
+static void *face_for(uint32_t character) { (void)character; return NULL; }
+#endif
 
 /* --- codes ---------------------------------------------------------------- */
 
@@ -716,7 +723,9 @@ static void render(const Added *glyph, int font_page, int large, Cell *cell)
     static const char capitals[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     int shade[16], y, x, i, baseline = large ? 13 : 10, room = large ? 14 : 6;
     unsigned char mask[16][16];
+#ifndef NO_FREETYPE
     FT_Face face = glyph->letter_shape >= 0 ? NULL : face_for(glyph->character);
+#endif
     memset(cell, 0, sizeof(*cell));
     cell->width = large ? 16 : 8;
     cell->height = large ? 16 : 12;
@@ -747,6 +756,7 @@ static void render(const Added *glyph, int font_page, int large, Cell *cell)
         for (y = 0; y < cell->height; y++) {
             for (x = 0; x < cell->width && rows[y][x]; x++) mask[y][x] = rows[y][x] == '#';
         }
+#ifndef NO_FREETYPE
     } else if (!face || FT_Set_Pixel_Sizes(face, 0, large ? 14 : 10) ||
                FT_Load_Char(face, glyph->character, FT_LOAD_RENDER | FT_LOAD_TARGET_NORMAL | FT_LOAD_NO_BITMAP)) {
         return;
@@ -766,6 +776,11 @@ static void render(const Added *glyph, int font_page, int large, Cell *cell)
             }
         }
     }
+#else
+    } else {
+        return;
+    }
+#endif
     for (y = 0; y < cell->height; y++) {
         for (x = 0; x < cell->width; x++) {
             int dx, dy, edge = 0;

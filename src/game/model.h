@@ -3,7 +3,8 @@
 
 #include "../types.h"
 
-#define MODEL_OFFSET(type, member) ((u32)&(((type *)0)->member))
+#include <stddef.h>
+#define MODEL_OFFSET(type, member) ((size_t)&(((type *)0)->member))
 
 #define MODEL_SLOT_COUNT 3
 #define MODEL_SLOT_SIZE 0xE20
@@ -50,7 +51,11 @@
 
 typedef struct {
     u32 field_00;
+#if defined(__x86_64__) || defined(_M_X64)
+    u32 field_04;
+#else
     void *field_04;
+#endif
 } ModelSlotHeadEntry;
 
 /* One of the MODEL_SLOT_ROW_COUNT accumulator rows at slot offset 0x750.
@@ -215,7 +220,11 @@ typedef struct {
 
 typedef struct {
     ModelSlotHeadEntry field_000[MODEL_SLOT_UNIT_COUNT];
+#if defined(__x86_64__) || defined(_M_X64)
+    u32 field_1E0[MODEL_SLOT_PART_COUNT];
+#else
     ModelSlotPart *field_1E0[MODEL_SLOT_PART_COUNT];
+#endif
     /* The per-animation key table. func_8004D58C fills it with 0xFFFF at a
      * 0x74 stride over MODEL_SLOT_ROW_COUNT rows, func_8004D75C indexes it as
      * [row][part], and Model_ControlSlotAnimation reads the same halfword through the
@@ -233,6 +242,11 @@ typedef struct {
     u8 field_BF7;
     ModelSlotSoundEntry sound_entries[MODEL_SLOT_SOUND_ENTRY_COUNT];
     ModelSlotCF8Block field_CF8;
+#if defined(__x86_64__) || defined(_M_X64)
+    u32 entries;
+    u32 field_D18;
+    u32 field_D1C;
+#else
     u8 *entries;
     /* The slot's own placement unit: one 0x50-byte GsCOORDUNIT out of the
      * MODEL_SLOT_DATA_ENTRY_SIZE-stride run at `entries`. Left incomplete
@@ -242,6 +256,7 @@ typedef struct {
     /* The coordinate func_8004CB0C selects once the units are linked; see
      * that function's header comment. */
     struct _GsCOORDUNIT *field_D1C;
+#endif
     u8 pad_D20[0x50];
     ModelSlotLightEntry field_D70[3];
     s32 field_DA0[3];
@@ -254,10 +269,17 @@ typedef struct {
      * func_8004D58C out of the two blocks it finds in the command chain.
      * Model_ControlSlotAnimation reads field_DD8 as the base of 4-byte command records and
      * field_DDC / field_DE0 as the source and destination of its transfers. */
+#if defined(__x86_64__) || defined(_M_X64)
+    u32 field_DD8;
+    u32 field_DDC;
+    u32 field_DE0;
+    u32 field_DE4;
+#else
     s32 *field_DD8;
     u8 *field_DDC;
     u8 *field_DE0;
     u8 *field_DE4;
+#endif
     /* The module data words D_8001001C..D_80010028 func_8004CB0C copies in
      * for slots 0 and 1 (see high_memory_addresses.h). */
     s32 field_DE8;

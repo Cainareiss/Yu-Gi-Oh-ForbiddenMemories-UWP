@@ -5,7 +5,7 @@
 #include "duel_card_layout.h"
 #include "duel_grid.h"
 
-#define DUEL_CARD_RECORD_OFFSET(type, member) ((u32)&(((type *)0)->member))
+#define DUEL_CARD_RECORD_OFFSET(type, member) ((size_t)&(((type *)0)->member))
 
 /* pad_08 is not unknown: func_80015DFC takes this same 0x1C record as
  * DisplayProjectionTrackedObject and writes its projected screen_x and
@@ -15,8 +15,13 @@
  * s8 field_18 there, and func_80015DFC's `< 0xF` test needs the signed
  * reading -- so the views are not merged until that is settled. */
 typedef struct {
+#if defined(__x86_64__) || defined(_M_X64)
+    u32 object;
+    u32 data;
+#else
     void *object;
     void *data;
+#endif
     u8 pad_08[4];
     s16 card_id;
     s16 attack;

@@ -363,6 +363,9 @@ long SquareRoot0(long value)
     return (long)(((uint32_t)(int32_t)table[index - 0x40] << shift) >> 12);
 }
 
+int Psx_csqrt(int x) { return (int)SquareRoot0(x); }
+int Psx_catan(int x) { return (int)ratan2(x, 4096); }
+
 Matrix *ScaleMatrix(Matrix *m, LongVector *v)
 {
     int i;
@@ -616,7 +619,9 @@ typedef struct DividePolygon4 {
     DivideLevel level[5];
 } DividePolygon4;
 
+#if !defined(__x86_64__) && !defined(_M_X64)
 _Static_assert(sizeof(DivideVertex) == 0x18 && sizeof(DivideLevel) == 0x8c, "DIVPOLYGON4 layout");
+#endif
 
 static uint32_t *emit_ft4(uint32_t *packet, DividePolygon4 *work, const DivideVertex *a, const DivideVertex *b,
                           const DivideVertex *c, const DivideVertex *d)

@@ -85,6 +85,7 @@ static unsigned region_count;
  * of the stack instead leaves no room to deliver the exception, and the
  * process just ends. */
 #define GUARD_ROOM 0x10000u
+#if !defined(__x86_64__) && !defined(_M_X64)
 void Memories_ContextSwitch(uint32_t *from_esp, const uint32_t *to_esp);
 static uint32_t service_context, game_context;
 static uint32_t process_bounds[4];
@@ -110,6 +111,7 @@ static void leave_game_stack(void)
     set_stack_bounds(process_bounds);
     Memories_ContextSwitch(&game_context, &service_context);
 }
+#endif
 
 /* The VSync a loaded state resumes in (apply). */
 static MemoriesStateEntry resume_entry;
@@ -424,7 +426,7 @@ static void apply(void)
     }
     fprintf(stderr, "memories-pc: state loaded\n");
     hold_signals(0);
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(__x86_64__) && !defined(_M_X64)
     set_stack_bounds(game_bounds);
     {
         /* Into the game through a context switch, as its first run went, so
@@ -441,7 +443,7 @@ static void apply(void)
         game_context = (uint32_t)(uintptr_t)frame;
         Memories_ContextSwitch(&service_context, &game_context);
     }
-#else
+#elif !defined(__x86_64__) && !defined(_M_X64)
     Memories_StateReturn(&entry, 263); /* one field, as VSync(0) reports it */
 #endif
 }
@@ -728,9 +730,9 @@ static int load(const char *path)
     pending_image = image;
     pending_size = (size_t)length;
     /* Leave the game stack; the service context applies the state. */
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(__x86_64__) && !defined(_M_X64)
     leave_game_stack();
-#else
+#elif !defined(__x86_64__) && !defined(_M_X64)
     swapcontext(&game_context, &service_context);
 #endif
     return 0; /* not reached: the state resumes in its own VSync caller */
@@ -828,7 +830,7 @@ void Memories_StatePoint(unsigned presented_frames)
 static void run_game(void)
 {
     game_result = game_entry();
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(__x86_64__) && !defined(_M_X64)
     leave_game_stack(); /* what uc_link does on Linux */
 #endif
 }
@@ -852,6 +854,11 @@ static int add_region(const char *name, char *data, char *data_end, char *bss, c
 
 int Memories_StateRunGame(int (*entry)(void))
 {
+#if defined(__x86_64__) || defined(_M_X64)
+    read_build_id();
+    game_entry = entry;
+    return entry();
+#else
     void *stack = mmap((void *)(uintptr_t)STACK_BASE, STACK_SIZE, PROT_READ | PROT_WRITE,
                        MAP_FIXED_NOREPLACE | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
     unsigned i;
@@ -901,4 +908,5 @@ int Memories_StateRunGame(int (*entry)(void))
         apply();
     }
     return game_result;
+#endif
 }

@@ -68,11 +68,27 @@ void Text_HandleChoiceCommand(DuelEffectChannel *object)
     s32 d;
 
     D_8009B350 = 1;
+#if defined(__x86_64__) || defined(_M_X64)
+    {
+        u8 *pstream = (u8 *)(uintptr_t)TEXT_STREAM_OWNER_VIEW(object)->streams[object->stream_58];
+        t = *pstream++;
+        TEXT_STREAM_OWNER_VIEW(object)->streams[object->stream_58] = (u32)(uintptr_t)pstream;
+    }
+#else
     t = *TEXT_STREAM_OWNER_VIEW(object)->streams[object->stream_58]++;
+#endif
     c = t;
     d = 0xF;
     if (c & 8) {
+#if defined(__x86_64__) || defined(_M_X64)
+        {
+            u8 *pstream = (u8 *)(uintptr_t)TEXT_STREAM_OWNER_VIEW(object)->streams[object->stream_58];
+            u = *pstream++;
+            TEXT_STREAM_OWNER_VIEW(object)->streams[object->stream_58] = (u32)(uintptr_t)pstream;
+        }
+#else
         u = *TEXT_STREAM_OWNER_VIEW(object)->streams[object->stream_58]++;
+#endif
         t = u;
         d = t;
     }
@@ -211,8 +227,17 @@ void Text_HandleDisplayEffectCommand(EffectObject *o) {
     s32 b;
 
     D_8009B350 = 1;
+#if defined(__x86_64__) || defined(_M_X64)
+    {
+        u8 *pstream = (u8 *)(uintptr_t)o->streams[o->depth];
+        a = *pstream++;
+        b = *pstream++;
+        o->streams[o->depth] = (u32)(uintptr_t)pstream;
+    }
+#else
     a = *o->streams[o->depth]++;
     b = *o->streams[o->depth]++;
+#endif
     id = a;
     flags = b;
 

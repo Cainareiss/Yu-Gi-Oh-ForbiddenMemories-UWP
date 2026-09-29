@@ -18,7 +18,9 @@
 #include "pc/audio/spu.h"
 #include "controls_runtime.h"
 #include "settings.h"
+#ifndef MEMORIES_UWP
 #include <pthread.h>
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -591,6 +593,10 @@ static void *run_silent(void *path)
 
 int Platform_StartSilentAudio(void (*mix)(int16_t *, size_t), const char *dump_path)
 {
+#ifdef MEMORIES_UWP
+    (void)mix; (void)dump_path;
+    return 0;
+#else
     pthread_t thread;
     sigset_t all, previous;
     int error;
@@ -601,4 +607,5 @@ int Platform_StartSilentAudio(void (*mix)(int16_t *, size_t), const char *dump_p
     error = pthread_create(&thread, NULL, run_silent, (void *)dump_path);
     pthread_sigmask(SIG_SETMASK, &previous, NULL);
     return error ? -1 : 0;
+#endif
 }
