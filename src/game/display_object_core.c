@@ -14,6 +14,40 @@
 #include "ordering_tables.h"
 #include "sprite_primitive.h"
 #include "display_object_packet_submit.h"
+#if defined(__x86_64__) || defined(_M_X64)
+#include "../pc/guest/image.h"
+
+u32 DisplayObject_EncodeCallback(DisplayObjectCallback callback)
+{
+    return Memories_GuestAddressForHost((void (*)(void))callback);
+}
+
+DisplayObjectCallback DisplayObject_DecodeCallback(u32 guest)
+{
+    void *host;
+    unsigned i;
+    host = Memories_HostAddressForGuest(guest);
+    if (host) return (DisplayObjectCallback)host;
+    /* Older sites assigned a host function directly into the PS1-sized
+     * field.  Recover its low word here while those sites are migrated. */
+    for (i = 0; i < Memories_FunctionMapCount; i++) {
+        if ((u32)(uintptr_t)Memories_FunctionMap[i].host == guest) {
+            return (DisplayObjectCallback)Memories_FunctionMap[i].host;
+        }
+    }
+    return (DisplayObjectCallback)(uintptr_t)guest;
+}
+
+u32 DisplayObject_EncodeFunctionPointer(void *callback)
+{
+    return Memories_GuestAddressForHost((void (*)(void))callback);
+}
+
+void *DisplayObject_DecodeFunctionPointer(u32 guest)
+{
+    return Memories_HostAddressForGuest(guest);
+}
+#endif
 
 extern u8 tail_data_start[];
 
@@ -266,7 +300,7 @@ void DisplayObject_RenderSpriteList(void) {
     POLY_FT4 *g;
     ClipState *h;
     DisplayObject *e;
-    GsOT **tb;
+    GsOT * PSX_PTR32 *tb;
     DisplayObjectCallback fn;
     s32 i;
     GsOT *ot;
@@ -284,7 +318,7 @@ void DisplayObject_RenderSpriteList(void) {
             e = (DisplayObject *)((u8 *)D_800EFE48 + i * DISPLAY_OBJECT_RECORD_SIZE);
             i = e->next;
             while (1) {
-                fn = e->update;
+                fn = DisplayObject_DecodeCallback(e->update);
                 if (fn != (DisplayObjectCallback)0) {
                     fn((u8 *)e);
                 }

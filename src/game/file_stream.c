@@ -6,6 +6,63 @@
 #include "../psyq/libds.h"
 #include "../unmatched.h"
 
+#if defined(MEMORIES_UWP) && defined(__x86_64__)
+typedef struct {
+    FileTransferDescriptor *descriptor;
+    FileTransferCallback callback;
+} FileTransferCallbackEntry;
+
+static FileTransferCallbackEntry s_phase_callbacks[8];
+static void (*s_control_callbacks[4])(void);
+
+void FileTransfer_SetPhaseCallback(
+    FileTransferDescriptor *descriptor,
+    FileTransferCallback callback
+)
+{
+    int i;
+    int free_slot = -1;
+
+    for (i = 0; i < (int)(sizeof(s_phase_callbacks) / sizeof(s_phase_callbacks[0])); ++i) {
+        if (s_phase_callbacks[i].descriptor == descriptor) {
+            s_phase_callbacks[i].callback = callback;
+            return;
+        }
+        if (free_slot < 0 && s_phase_callbacks[i].descriptor == 0)
+            free_slot = i;
+    }
+    if (free_slot >= 0) {
+        s_phase_callbacks[free_slot].descriptor = descriptor;
+        s_phase_callbacks[free_slot].callback = callback;
+    }
+}
+
+FileTransferCallback FileTransfer_GetPhaseCallback(
+    const FileTransferDescriptor *descriptor
+)
+{
+    int i;
+    for (i = 0; i < (int)(sizeof(s_phase_callbacks) / sizeof(s_phase_callbacks[0])); ++i) {
+        if (s_phase_callbacks[i].descriptor == descriptor)
+            return s_phase_callbacks[i].callback;
+    }
+    return 0;
+}
+
+void FileTransfer_SetControlCallback(unsigned slot, void (*callback)(void))
+{
+    if (slot < (unsigned)(sizeof(s_control_callbacks) / sizeof(s_control_callbacks[0])))
+        s_control_callbacks[slot] = callback;
+}
+
+void (*FileTransfer_GetControlCallback(unsigned slot))(void)
+{
+    if (slot < (unsigned)(sizeof(s_control_callbacks) / sizeof(s_control_callbacks[0])))
+        return s_control_callbacks[slot];
+    return 0;
+}
+#endif
+
 void File_InitTransferState(s32 value)
 {
     D_8009B118 = value;
@@ -21,6 +78,11 @@ void File_InitTransferState(s32 value)
     D_8009B124 = 0;
     D_8009B0E8 = 0;
     D_8009B130 = 0;
+#if defined(MEMORIES_UWP) && defined(__x86_64__)
+    FileTransfer_SetControlCallback(FILE_TRANSFER_CB_PHASE_END, 0);
+    FileTransfer_SetControlCallback(FILE_TRANSFER_CB_PHASE_START, 0);
+    FileTransfer_SetControlCallback(FILE_TRANSFER_CB_WAIT, 0);
+#endif
     while (DsInit() == 0) {
     }
     D_8009B0FC = 1;
@@ -75,7 +137,12 @@ FileTransferDescriptor *File_InitTransferDescriptor(
     transfer->substate = 0;
     transfer->buffer_index = 0;
     transfer->phase_size = 0;
+#if defined(MEMORIES_UWP) && defined(__x86_64__)
+    transfer->phase_callback = 0;
+    FileTransfer_SetPhaseCallback(transfer, callback);
+#else
     transfer->phase_callback = callback;
+#endif
     transfer->result = field_40;
     if (length) {
         if (flags & 0x1000000) {

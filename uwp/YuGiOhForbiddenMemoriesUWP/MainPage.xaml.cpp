@@ -47,6 +47,7 @@ MainPage::MainPage()
     try
     {
         InitializeComponent();
+        m_isXbox = Windows::System::Profile::AnalyticsInfo::VersionInfo->DeviceFamily == L"Windows.Xbox";
         LogPage(L"MainPage::InitializeComponent() succeeded");
     }
     catch (Platform::Exception^ ex)
@@ -88,9 +89,19 @@ MainPage::MainPage()
     auto coreWindow = Window::Current->CoreWindow;
     if (coreWindow != nullptr)
     {
+        // Xbox exposes the CoreWindow back action as navigation.  Consume it
+        // in the app so B never terminates the UWP page like a browser tab.
+        if (m_isXbox) coreWindow->PointerCursor = nullptr;
         coreWindow->KeyDown += ref new TypedEventHandler<CoreWindow^, KeyEventArgs^>(this, &MainPage::OnKeyDown);
         coreWindow->KeyUp += ref new TypedEventHandler<CoreWindow^, KeyEventArgs^>(this, &MainPage::OnKeyUp);
         coreWindow->CharacterReceived += ref new TypedEventHandler<CoreWindow^, CharacterReceivedEventArgs^>(this, &MainPage::OnCharacterReceived);
+    }
+
+    auto navigation = SystemNavigationManager::GetForCurrentView();
+    if (navigation != nullptr)
+    {
+        navigation->BackRequested += ref new EventHandler<BackRequestedEventArgs^>(
+            this, &MainPage::OnBackRequested);
     }
 
     // Register CompositionTarget::Rendering for 60 FPS presentation loop
@@ -112,7 +123,9 @@ void MainPage::OnNavigatedTo(NavigationEventArgs^ e)
 {
     LogPage(L"MainPage::OnNavigatedTo() started");
     Page::OnNavigatedTo(e);
+    Focus(Windows::UI::Xaml::FocusState::Programmatic);
     CheckAvailableRoms();
+    StartMenuMusic();
 }
 
 void MainPage::CheckAvailableRoms()
@@ -169,6 +182,7 @@ void MainPage::CheckAvailableRoms()
 
 void MainPage::OnPointerPressed(Object^ sender, PointerRoutedEventArgs^ e)
 {
+    if (m_isXbox) { e->Handled = true; return; }
     auto pt = e->GetCurrentPoint(m_swapChainPanel);
     int button = 0; // 0 = Left, 1 = Right, 2 = Middle
     if (pt->Properties->IsRightButtonPressed) button = 1;
@@ -180,6 +194,7 @@ void MainPage::OnPointerPressed(Object^ sender, PointerRoutedEventArgs^ e)
 
 void MainPage::OnPointerReleased(Object^ sender, PointerRoutedEventArgs^ e)
 {
+    if (m_isXbox) { e->Handled = true; return; }
     auto pt = e->GetCurrentPoint(m_swapChainPanel);
     int button = 0;
     if (pt->Properties->PointerUpdateKind == Windows::UI::Input::PointerUpdateKind::RightButtonReleased) button = 1;
@@ -191,6 +206,7 @@ void MainPage::OnPointerReleased(Object^ sender, PointerRoutedEventArgs^ e)
 
 void MainPage::OnPointerMoved(Object^ sender, PointerRoutedEventArgs^ e)
 {
+    if (m_isXbox) { e->Handled = true; return; }
     auto pt = e->GetCurrentPoint(m_swapChainPanel);
     ImGuiFrontend::Instance().OnPointerMoved(pt->Position.X, pt->Position.Y);
     e->Handled = true;
@@ -198,6 +214,7 @@ void MainPage::OnPointerMoved(Object^ sender, PointerRoutedEventArgs^ e)
 
 void MainPage::OnPointerWheelChanged(Object^ sender, PointerRoutedEventArgs^ e)
 {
+    if (m_isXbox) { e->Handled = true; return; }
     auto pt = e->GetCurrentPoint(m_swapChainPanel);
     float delta = static_cast<float>(pt->Properties->MouseWheelDelta) / 120.0f;
     ImGuiFrontend::Instance().OnPointerWheel(delta);
@@ -207,13 +224,31 @@ void MainPage::OnPointerWheelChanged(Object^ sender, PointerRoutedEventArgs^ e)
 void MainPage::OnKeyDown(CoreWindow^ sender, KeyEventArgs^ e)
 {
     int vk = static_cast<int>(e->VirtualKey);
+    // Gamepad input is polled once per frame. Do not let XAML also navigate
+    // or synthesize clicks from the same controller key.
+    if (vk >= static_cast<int>(Windows::System::VirtualKey::GamepadA) &&
+        vk <= static_cast<int>(Windows::System::VirtualKey::GamepadRightThumbstickLeft))
+    {
+        e->Handled = true;
+        return;
+    }
+    GamepadUwp::SetKeyboardKey(vk, true);
     ImGuiFrontend::Instance().OnKeyDown(vk);
+    e->Handled = true;
 }
 
 void MainPage::OnKeyUp(CoreWindow^ sender, KeyEventArgs^ e)
 {
     int vk = static_cast<int>(e->VirtualKey);
+    if (vk >= static_cast<int>(Windows::System::VirtualKey::GamepadA) &&
+        vk <= static_cast<int>(Windows::System::VirtualKey::GamepadRightThumbstickLeft))
+    {
+        e->Handled = true;
+        return;
+    }
+    GamepadUwp::SetKeyboardKey(vk, false);
     ImGuiFrontend::Instance().OnKeyUp(vk);
+    e->Handled = true;
 }
 
 void MainPage::OnCharacterReceived(CoreWindow^ sender, CharacterReceivedEventArgs^ e)
@@ -222,8 +257,99 @@ void MainPage::OnCharacterReceived(CoreWindow^ sender, CharacterReceivedEventArg
     ImGuiFrontend::Instance().OnCharacter(ch);
 }
 
+void MainPage::OnBackRequested(Object^ sender, BackRequestedEventArgs^ e)
+{
+    (void)sender;
+    if (e == nullptr) return;
+
+    // B belongs to the PS1 game and ImGui's cancel action. Consume the shell
+    // navigation request without opening or toggling the in-game overlay.
+    e->Handled = true;
+}
+
+void MainPage::OnMenuMusicOpened(Windows::Media::Playback::MediaPlayer^ sender, Object^ e)
+{
+    (void)e;
+    LogPage(L"Menu music opened; duration=" + std::to_wstring(sender->PlaybackSession->NaturalDuration.Duration / 10000000) + L" seconds.");
+    Dispatcher->RunAsync(CoreDispatcherPriority::Normal, ref new DispatchedHandler([this]()
+    {
+        // Opening is asynchronous. A late completion must not restart the
+        // theme after the player has pressed Play or entered the game.
+        if (m_menuMusicRequested && !m_inGame && !m_startingGame)
+            m_menuPlayer->Play();
+    }));
+}
+
+void MainPage::OnMenuMusicFailed(Windows::Media::Playback::MediaPlayer^ sender, Windows::Media::Playback::MediaPlayerFailedEventArgs^ e)
+{
+    (void)sender;
+    std::wstring message = L"Menu music failed: ";
+    if (e != nullptr && e->ErrorMessage != nullptr)
+    {
+        message += e->ErrorMessage->Data();
+    }
+    LogPage(message);
+}
+
+void MainPage::OnMenuPlaybackStateChanged(Windows::Media::Playback::MediaPlaybackSession^ sender, Object^ e)
+{
+    (void)e;
+    if (sender->PlaybackState == Windows::Media::Playback::MediaPlaybackState::Playing)
+        LogPage(L"Menu music playback state: Playing.");
+    else if (sender->PlaybackState == Windows::Media::Playback::MediaPlaybackState::Paused)
+        LogPage(L"Menu music playback state: Paused.");
+}
+
+void MainPage::QueueStartGame()
+{
+    if (m_startingGame || m_inGame || GameEngineBridge::Instance().IsRunning())
+    {
+        LogPage(L"Duplicate start request ignored.");
+        return;
+    }
+
+    // Reserve the launch before any storage operation can dispatch events.
+    // Run it after RenderMenu has finished recording/presenting its frame.
+    m_startingGame = true;
+    try
+    {
+        Dispatcher->RunAsync(CoreDispatcherPriority::Normal,
+            ref new DispatchedHandler([this]()
+        {
+            try
+            {
+                StartGameWithCurrentRom();
+            }
+            catch (Platform::Exception^ ex)
+            {
+                LogPage(std::wstring(L"Game launch failed: ") + ex->Message->Data());
+                m_inGame = GameEngineBridge::Instance().IsRunning();
+                if (!m_inGame) StartMenuMusic();
+            }
+            catch (const std::exception& ex)
+            {
+                GameEngineBridge::Instance().SetLastError(ex.what());
+                LogPage(L"Game launch failed with a native exception.");
+                m_inGame = GameEngineBridge::Instance().IsRunning();
+                if (!m_inGame) StartMenuMusic();
+            }
+            m_startingGame = false;
+        }));
+    }
+    catch (...)
+    {
+        m_startingGame = false;
+        throw;
+    }
+}
+
 void MainPage::StartGameWithCurrentRom()
 {
+    if (m_inGame || GameEngineBridge::Instance().IsRunning())
+    {
+        LogPage(L"Duplicate game launch ignored.");
+        return;
+    }
     LogPage(L"StartGameWithCurrentRom called with: " + m_currentRomPath);
     if (m_currentRomPath.empty())
     {
@@ -247,13 +373,85 @@ void MainPage::StartGameWithCurrentRom()
     settings.monsters3D = s.monsters3D;
     settings.aiHardMode = s.aiHardMode;
     settings.dropMissingCards = s.dropMissingCards;
+    settings.masterVolume = s.masterVolume;
 
-    m_inGame = true;
-    GameEngineBridge::Instance().StartGame(m_d3d12Renderer.get(), m_currentRomPath, settings);
+    StopMenuMusic();
+    m_inGame = GameEngineBridge::Instance().StartGame(m_d3d12Renderer.get(), m_currentRomPath, settings);
+    if (!m_inGame)
+    {
+        StartMenuMusic();
+    }
+}
+
+void MainPage::StartMenuMusic()
+{
+    m_menuMusicRequested = true;
+    try
+    {
+        using namespace Windows::Media::Playback;
+        if (m_menuPlayer == nullptr)
+        {
+            // Audio playback has no dependency on the visibility/loading
+            // of a XAML element or on the DirectX presentation surface.
+            m_menuPlayer = ref new MediaPlayer();
+            m_menuPlayer->AutoPlay = false;
+            m_menuPlayer->AudioCategory = MediaPlayerAudioCategory::GameMedia;
+            m_menuPlayer->CommandManager->IsEnabled = false;
+            m_menuPlayer->IsLoopingEnabled = true;
+            m_menuPlayer->IsMuted = false;
+            m_menuPlayer->Volume = 0.70;
+            m_menuPlayer->MediaOpened += ref new TypedEventHandler<MediaPlayer^, Object^>(this, &MainPage::OnMenuMusicOpened);
+            m_menuPlayer->MediaFailed += ref new TypedEventHandler<MediaPlayer^, MediaPlayerFailedEventArgs^>(this, &MainPage::OnMenuMusicFailed);
+            m_menuPlayer->PlaybackSession->PlaybackStateChanged += ref new TypedEventHandler<MediaPlaybackSession^, Object^>(this, &MainPage::OnMenuPlaybackStateChanged);
+            m_menuPlayer->Source = Windows::Media::Core::MediaSource::CreateFromUri(
+                ref new Uri(L"ms-appx:///Assets/YuGiOhMenuTheme.mp3"));
+        }
+        m_menuPlayer->Play();
+        LogPage(L"Menu theme requested: native audio player, loop enabled, volume 70%.");
+    }
+    catch (Platform::Exception^ ex)
+    {
+        LogPage(std::wstring(L"Menu theme initialization failed: ") + ex->Message->Data());
+    }
+}
+
+void MainPage::StopMenuMusic()
+{
+    m_menuMusicRequested = false;
+    m_menuMusicLastPosition = 0;
+    if (m_menuPlayer != nullptr)
+    {
+        m_menuPlayer->Pause();
+        m_menuPlayer->PlaybackSession->Position = TimeSpan{};
+        LogPage(L"Menu theme stopped before starting the game.");
+    }
 }
 
 void MainPage::OnCompositionRendering(Object^ sender, Object^ e)
 {
+    // Storage/WinRT can dispatch nested UI events. A nested callback must
+    // never redraw the menu or invoke Play on the current command list.
+    if (m_isRendering || m_startingGame) return;
+    struct RenderingScope
+    {
+        bool& active;
+        RenderingScope(bool& flag) : active(flag) { active = true; }
+        ~RenderingScope() { active = false; }
+    } renderingScope(m_isRendering);
+
+    // Record progress and natural wrap-around to distinguish a loaded file
+    // from a theme that is actually playing and looping.
+    if (!m_inGame && m_menuMusicRequested && m_menuPlayer != nullptr && ++m_menuMusicPollFrames % 60 == 0 &&
+        m_menuPlayer->PlaybackSession->PlaybackState == Windows::Media::Playback::MediaPlaybackState::Playing)
+    {
+        const auto position = m_menuPlayer->PlaybackSession->Position.Duration;
+        if (position < m_menuMusicLastPosition)
+            LogPage(L"Menu theme loop restarted.");
+        else if (m_menuMusicLastPosition == 0 && position > 0)
+            LogPage(L"Menu theme playback position is advancing.");
+        m_menuMusicLastPosition = position;
+    }
+
     // 1. Ensure DirectX 12 renderer is initialized on the SwapChainPanel
     if (!m_rendererInitialized)
     {
@@ -272,11 +470,26 @@ void MainPage::OnCompositionRendering(Object^ sender, Object^ e)
             return;
         }
     }
+    else
+    {
+        // SwapChainPanel starts at its XAML measure size and receives the
+        // real window size a few composition ticks later. Keep the renderer
+        // and ImGui coordinate space synchronized with that change.
+        uint32_t width = static_cast<uint32_t>(m_swapChainPanel->ActualWidth);
+        uint32_t height = static_cast<uint32_t>(m_swapChainPanel->ActualHeight);
+        if (width != 0 && height != 0 &&
+            (width != m_d3d12Renderer->GetWidth() || height != m_d3d12Renderer->GetHeight()))
+        {
+            m_d3d12Renderer->Resize(width, height);
+        }
+    }
 
     // 2. Poll Gamepad input and update ImGui
     GamepadUwp::Poll();
     uint16_t padBits = GamepadUwp::GetPadBits(0);
-    ImGuiFrontend::Instance().UpdateGamepad(padBits);
+    if (m_isXbox) Window::Current->CoreWindow->PointerCursor = nullptr;
+    ImGuiFrontend::Instance().UpdateGamepad(padBits, GamepadUwp::IsConnected(0), m_inGame);
+    GamepadUwp::SetUiCapture(!m_inGame || ImGuiFrontend::Instance().IsInGameMenuOpen());
 
     // 3. Render state handling
     if (!m_inGame)
@@ -313,16 +526,19 @@ void MainPage::OnCompositionRendering(Object^ sender, Object^ e)
             },
             [this]() {
                 // INICIAR JOGO clicked
-                StartGameWithCurrentRom();
+                QueueStartGame();
             }
         );
     }
     else
     {
+        GameEngineBridge::Instance().PresentPendingFrame();
         // In-game: if game has exited, return to menu
         if (!GameEngineBridge::Instance().IsRunning())
         {
+            GameEngineBridge::Instance().StopGame();
             m_inGame = false;
+            StartMenuMusic();
             LogPage(L"Game engine stopped. Returning to Egyptian Main Menu.");
         }
     }

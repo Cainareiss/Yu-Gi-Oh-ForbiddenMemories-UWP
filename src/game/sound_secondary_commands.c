@@ -149,7 +149,12 @@ long SD_SequenceTimerCallback(void)
                 state->field_0508 = 0;
                 func_8004C84C();
                 func_8004AAFC();
+#if defined(MEMORIES_UWP) && defined(__x86_64__)
+                extern void SD_SecondaryCallback(void);
+                callback = SD_SecondaryCallback;
+#else
                 callback = D_8009B458->field_050C;
+#endif
                 if (callback != 0)
                     callback();
             }

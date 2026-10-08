@@ -72,11 +72,11 @@ typedef struct {
 
 
 typedef struct {
-	unsigned long length;
-	GsOT_TAG *org;
-	unsigned long offset;
-	unsigned long point;
-	GsOT_TAG *tag;
+	u32 length;
+	GsOT_TAG * PSX_PTR32 org;
+	u32 offset;
+	u32 point;
+	GsOT_TAG * PSX_PTR32 tag;
 }       GsOT;
 
 typedef struct {

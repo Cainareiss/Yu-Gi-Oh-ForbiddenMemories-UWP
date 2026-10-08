@@ -10,22 +10,22 @@
  * GraphicsFrameBuffer and clears each through GsClearOt.
  * Renderers select one with DisplayObject.ot_index; the main-menu overlay
  * and duel-effect requests use the same pointers. */
-extern GsOT *D_800E9D90[4];
+extern GsOT * PSX_PTR32 D_800E9D90[4];
 
 /* Interior relocation symbols for slots 1, 2 and 3, not separate storage.
  * Keep the oversized/unsized views used by the -G8 resident readers:
  * replacing them with scalars changes absolute loads into gp-relative ones.
  * The scalar views belong to -G0 overlay/candidate consumers. */
 #ifdef ORDERING_TABLE_SLOT1_ARRAY
-extern GsOT *D_800E9D94[4];
+extern GsOT * PSX_PTR32 D_800E9D94[4];
 #else
-extern GsOT *D_800E9D94;
+extern GsOT * PSX_PTR32 D_800E9D94;
 #endif
 
 #ifdef ORDERING_TABLE_SLOT2_ARRAY
-extern GsOT *D_800E9D98[];
+extern GsOT * PSX_PTR32 D_800E9D98[];
 #else
-extern GsOT *D_800E9D98;
+extern GsOT * PSX_PTR32 D_800E9D98;
 #endif
 /* Slot 3. Both readers want the bare %hi/%lo form -- two relocations each in
  * their target listings -- and both build gcc_2_8_1_g8_split, where the plain
@@ -35,7 +35,7 @@ extern GsOT *D_800E9D98;
  * the address stays split into %hi and %lo insns and reload stores the
  * spilled pointer through the dying %hi register, which is the
  * `lw $v0; sw $v0, N($sp)` both targets show. */
-extern GsOT *D_800E9D9C;
+extern GsOT * PSX_PTR32 D_800E9D9C;
 
 #if !defined(__x86_64__) && !defined(_M_X64)
 typedef char OrderingTable_descriptor_size_must_be_0x14[
@@ -44,7 +44,7 @@ typedef char OrderingTable_descriptor_size_must_be_0x14[
 #endif
 typedef char OrderingTable_slots_size_must_be_0x10[
 #if defined(__x86_64__) || defined(_M_X64)
-    sizeof(D_800E9D90) == 0x20 ? 1 : -1
+    sizeof(D_800E9D90) == 0x10 ? 1 : -1
 #else
     sizeof(D_800E9D90) == 0x10 ? 1 : -1
 #endif

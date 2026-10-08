@@ -13,6 +13,12 @@
 
 /* Both return 0 on success and print the reason on failure. */
 int Memories_GuestMap(void);
+/* Return the retail (guest) address for a native recompiled routine.  Guest
+ * data structures must retain that 32-bit address; storing a 64-bit host
+ * callback in them loses the high half on x64. */
+unsigned Memories_GuestAddressForHost(void (*host)(void));
+/* Return the native entry for a guest function address kept in runtime data. */
+void *Memories_HostAddressForGuest(unsigned guest);
 /* Copy a user-supplied PS-X EXE's initialized image to its load address.
  * MIPS text comes along unused; it keeps every data offset exact. */
 int Memories_GuestLoadExe(const char *path);

@@ -65,7 +65,7 @@ void Main_LoadBootImageStage(FileTransferDescriptor *p, s32 mode)
     s32 one;
     s32 v;
     s32 w;
-    s32 e;
+    u32 e;
     s32 x;
     s32 m;
     s32 d;

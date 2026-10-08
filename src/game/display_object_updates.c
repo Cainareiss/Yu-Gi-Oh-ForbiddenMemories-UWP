@@ -113,12 +113,12 @@ void DisplayObject_RenderSpriteStripList(void)
 
     if (i >= 0) {
         DisplayObject *base = D_800EFE48;
-        GsOT **table = D_800E9D90;
+        GsOT * PSX_PTR32 *table = D_800E9D90;
 
         do {
             DisplayObject *object =
-                (DisplayObject *)(i * DISPLAY_OBJECT_RECORD_SIZE + (s32)base);
-            DisplayObjectCallback callback = object->update;
+                (DisplayObject *)((u8 *)base + i * DISPLAY_OBJECT_RECORD_SIZE);
+            DisplayObjectCallback callback = DISPLAY_OBJECT_GET_UPDATE(object);
             u8 *data = DISPLAY_OBJECT_CALLBACK_BYTES(object);
 
             i = object->next;
@@ -142,7 +142,7 @@ void DisplayObject_RunUpdateCallbackList(void)
 
     while (i >= 0) {
         DisplayObject *object = &D_800EFE48[i];
-        DisplayObjectCallback callback = object->update;
+        DisplayObjectCallback callback = DISPLAY_OBJECT_GET_UPDATE(object);
 
         i = object->next;
         if (callback != 0) {
@@ -157,12 +157,12 @@ void DisplayObject_RunSecondaryCallbackList(void)
 
     if (i >= 0) {
         DisplayObject *base = D_800EFE48;
-        GsOT **table = D_800E9D90;
+        GsOT * PSX_PTR32 *table = D_800E9D90;
 
         do {
             DisplayObject *object =
-                (DisplayObject *)(i * DISPLAY_OBJECT_RECORD_SIZE + (s32)base);
-            DisplayObjectCallback callback = object->update;
+                (DisplayObject *)((u8 *)base + i * DISPLAY_OBJECT_RECORD_SIZE);
+            DisplayObjectCallback callback = DISPLAY_OBJECT_GET_UPDATE(object);
             u8 *data = DISPLAY_OBJECT_CALLBACK_BYTES(object);
 
             i = object->next;
@@ -174,7 +174,7 @@ void DisplayObject_RunSecondaryCallbackList(void)
             if (((object->flags & DISPLAY_OBJECT_RENDERABLE_MASK) ^
                  DISPLAY_OBJECT_RENDERABLE_MASK) == 0) {
                 void (*secondary)(u8 *, s32) =
-                    (void (*)(u8 *, s32))object->field_4C;
+                    (void (*)(u8 *, s32))DisplayObject_DecodeFunctionPointer((u32)object->field_4C);
 
                 if (secondary != 0) {
                     secondary(data, (s32)table[object->ot_index]);

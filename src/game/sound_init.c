@@ -23,7 +23,7 @@ void SD_RequestBgmPlayback(s32 value, s32 data)
         SD_ResetMusicState();
         return;
     }
-    if (*g_SDValue->music_track != (small >> 4))
+    if (*PSX_PTR32_HOST(u16, g_SDValue->music_track) != (small >> 4))
         SD_RequestMusicPackageLoad(small, 1);
     command.command = 0x48;
     command.field_0002 = value;
@@ -45,7 +45,7 @@ void SD_OpenMusicVab(void)
     SDValue *state = g_SDValue;
 
     if (state->field_157A != 0) {
-        SDMusicPackage *entry = (SDMusicPackage *)state->music_track;
+        SDMusicPackage *entry = PSX_PTR32_HOST(SDMusicPackage, state->music_track);
         s32 result =
             SD_VabOpenHead((u8 *)&entry->vab_header, 0, entry->spu_address);
 
@@ -58,7 +58,7 @@ void SD_OpenMusicVab(void)
     }
     {
         register SDValue *final = g_SDValue;
-        register u16 *entry = final->music_track;
+        register u16 *entry = PSX_PTR32_HOST(u16, final->music_track);
         final->field_1578 = *entry;
     }
 }
@@ -70,7 +70,7 @@ void SD_SetMusicTrackBuffer(u16 *track)
         g_SDValue->music_track = track;
     else
         g_SDValue->music_track = (u16 *)0x801EA800;
-    *g_SDValue->music_track = 0xFFFF;
+    *PSX_PTR32_HOST(u16, g_SDValue->music_track) = 0xFFFF;
 }
 
 void SD_ResetMusicTrackBuffer(void)

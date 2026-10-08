@@ -154,7 +154,7 @@ void NameEntry_Init(void)
     obj->field_3C.h.field_3E = 16;
     DisplayObject_SelectOrderingTable1(obj);
     DisplayObject_SetDepthOffset(obj, 10);
-    obj->field_4C = (s32)NameEntry_DrawSelectionFrame;
+    DISPLAY_OBJECT_SET_4C(obj, NameEntry_DrawSelectionFrame);
     D_8016D404 = (SelectionFrame *)obj;
     obj = DisplayObject_AcquireSlot(DisplayObject_FindFreeGeneralSlot(), 1);
     DisplayObject_ConfigureScreenSprite(obj, 107, 199, 32, 32, 144, 128, 23, 256, 240);
@@ -282,8 +282,8 @@ void NameEntry_UpdateGlyphShatter(u8 *object)
                                   (u16)glyph->field_40.h.field_40,
                                   (u16)glyph->field_40.h.field_42);
                     piece->field_6C = 3;
-                    piece->update =
-                        (DisplayObjectCallback)NameEntry_UpdateGlyphFragment;
+                    DISPLAY_OBJECT_SET_UPDATE(piece,
+                        NameEntry_UpdateGlyphFragment);
                 }
             }
         }
@@ -363,7 +363,7 @@ void NameEntry_UpdateGlyphTransfer(u8 *w)
                       (u16)g->field_40.h.field_40, (u16)g->field_40.h.field_42);
         o->field_0C = 0x606060;
         o->field_60 = 6;
-        o->update = (DisplayObjectCallback)DisplayObject_FadeBrightnessAndRelease;
+        DISPLAY_OBJECT_SET_UPDATE(o, DisplayObject_FadeBrightnessAndRelease);
         o->attribute |= (GsALON | GsAONE);
         return;
     }
@@ -382,7 +382,7 @@ void NameEntry_UpdateGlyphTransfer(u8 *w)
         return;
     }
     o = NameEntry_SpawnGlyphSprite(3, node);
-    o->update = NameEntry_UpdateGlyphShatter;
+    DISPLAY_OBJECT_SET_UPDATE(o, NameEntry_UpdateGlyphShatter);
     o->field_6C = 5;
 }
 
@@ -404,10 +404,13 @@ void *NameEntry_SpawnGlyphSprite(s32 slot, DuelEffectEntry *w)
     shift = 0;
     u = 0;
     v = 0;
-    /* Preserve the pre-null-test read; this is not a null-safe C contract. */
-    code = w->code_00;
+    /* On the original console address zero was readable.  On x64 it is an
+       access violation, and callers intentionally use a null node to ask
+       for the cursor sprite. */
+    code = 0;
     obj = DisplayObject_AcquireSlot(DisplayObject_FindFreeGeneralSlot(), 1);
     if (w != 0) {
+        code = w->code_00;
         p = &D_800EB0F8[slot];
         switch (code) {
         case 0x8171: case 0x8173: code = 0x8183; break;
@@ -496,7 +499,7 @@ s32 NameEntry_AdjustLength(s32 delta, s32 arg)
     D_8016D42C += delta;
     object = (DisplayObject *)D_8016D43C;
     object->field_44.h.field_44 = D_8016D42C * 16 + 0x6B;
-    object->update = (DisplayObjectCallback)NameEntry_UpdateCaretTween;
+    DISPLAY_OBJECT_SET_UPDATE(object, NameEntry_UpdateCaretTween);
     object->field_6C = 2;
     object->field_60 = arg;
     object->field_44.h.field_46 = object->field_30.h.field_32;

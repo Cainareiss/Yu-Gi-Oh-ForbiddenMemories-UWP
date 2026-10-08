@@ -8,17 +8,17 @@
 
   <Identity
     Name="YuGiOhForbiddenMemoriesUWP"
-    Publisher="CN=EmulationStationBR"
-    Version="1.0.7.0"
+    Publisher="CN=Antigravity"
+    Version="1.0.11.0"
     ProcessorArchitecture="x64" />
 
   <mp:PhoneIdentity PhoneProductId="a8f27618-971c-4b6e-826c-0e86b245a4a3" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
 
   <Properties>
     <DisplayName>Yu-Gi-Oh! Forbidden Memories</DisplayName>
-    <PublisherDisplayName>EmulationStationBR</PublisherDisplayName>
-    <Logo>Assets\StoreLogo.png</Logo>
-    <Description>Yu-Gi-Oh! Forbidden Memories Recompiled for Xbox Series S/X and Windows 10/11 with DirectX 12.</Description>
+    <PublisherDisplayName>Yu-Gi-Oh! Forbidden Memories</PublisherDisplayName>
+    <Logo>Assets\YuGiOhStoreLogo.png</Logo>
+    <Description>Yu-Gi-Oh! Forbidden Memories Recompiled for Xbox Series S/X and Windows 10/11.</Description>
   </Properties>
 
   <Dependencies>
@@ -38,15 +38,15 @@
         DisplayName="Yu-Gi-Oh! Forbidden Memories"
         Description="Yu-Gi-Oh! Forbidden Memories Recompiled (DirectX 12)"
         BackgroundColor="#000000"
-        Square150x150Logo="Assets\Square150x150Logo.png"
-        Square44x44Logo="Assets\Square44x44Logo.png">
-        <uap:DefaultTile Wide310x150Logo="Assets\WideLogo.png" Square310x310Logo="Assets\Square310x310Logo.png" ShortName="YFM Recompiled">
+        Square150x150Logo="Assets\YuGiOhIcon150.png"
+        Square44x44Logo="Assets\YuGiOhIcon44.png">
+        <uap:DefaultTile Wide310x150Logo="Assets\YuGiOhWideLogo.png" Square310x310Logo="Assets\YuGiOhIcon310.png" ShortName="Yu-Gi-Oh! FM">
           <uap:ShowNameOnTiles>
             <uap:ShowOn Tile="square150x150Logo" />
             <uap:ShowOn Tile="wide310x150Logo" />
           </uap:ShowNameOnTiles>
         </uap:DefaultTile>
-        <uap:SplashScreen Image="Assets\SplashScreen.png" BackgroundColor="#000000" />
+        <uap:SplashScreen Image="Assets\YuGiOhSplashScreen.png" BackgroundColor="#000000" />
       </uap:VisualElements>
     </Application>
   </Applications>

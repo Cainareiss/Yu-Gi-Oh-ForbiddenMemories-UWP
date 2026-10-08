@@ -214,6 +214,12 @@ int VSyncCallback(void (*callback)(void))
  * press a second time on the next frame (doubled inputs at 300%). */
 /* Entered through the assembly VSync, which records the caller's registers
  * for save states (src/pc/guest/state_i386.S). */
+#if defined(MEMORIES_UWP) && defined(__x86_64__)
+int Memories_VSync(int mode);
+/* The i386 assembly entry is not linked into the x64 core. */
+int VSync(int mode) { return Memories_VSync(mode); }
+#endif
+
 int Memories_VSync(int mode)
 {
     unsigned now, elapsed;

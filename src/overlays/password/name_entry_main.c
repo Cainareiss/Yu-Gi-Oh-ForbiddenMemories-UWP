@@ -9,6 +9,11 @@
 #include "../../psyq/stdio.h"
 #include "../../game/campaign_flags.h"
 #include "../../game/util_memory.h"
+#ifdef MEMORIES_UWP
+extern void UWP_LogMessage(const char *msg);
+#else
+#define UWP_LogMessage(msg) ((void)0)
+#endif
 #ifdef MEMORIES_PC
 #include "pc/cards/cards.h"
 #include "pc/cards/starter.h"
@@ -46,7 +51,7 @@ static s32 NameEntry_DealModStarterDeck(void)
 void NameEntry_BuildStarterDeck(void)
 {
     u8 counts[CARD_COUNT];
-    NameEntryStarterDeckPool **table;
+    NameEntryStarterDeckPool * PSX_PTR32 *table;
     u16 *entry;
     u16 *p;
     s16 *out;
@@ -54,6 +59,8 @@ void NameEntry_BuildStarterDeck(void)
     s32 acc;
     s32 threshold;
     s32 i;
+
+    UWP_LogMessage("[NAME_ENTRY] building starter deck");
 
 #ifdef MEMORIES_PC
     if (NameEntry_DealModStarterDeck()) {
@@ -96,6 +103,7 @@ void NameEntry_BuildStarterDeck(void)
         table++;
         entry = (u16 *)*table;
     }
+    UWP_LogMessage("[NAME_ENTRY] starter deck complete");
 }
 
 void NameEntry_Main(void)
@@ -109,10 +117,12 @@ void NameEntry_Main(void)
     Util_FillMemory(D_801D0000, 0, 0x3000);
     printf("SaveLoadBuf add = 0x%x size = 0x%x\n", D_801D0000, 0x3000);
     NameEntry_Init();
+    UWP_LogMessage("[NAME_ENTRY] main loop entered");
     do {
         Main_AdvanceFrame();
         rand();
     } while (NameEntry_PollCompletion() == 0);
+    UWP_LogMessage("[NAME_ENTRY] main loop completed");
     NameEntry_BuildStarterDeck();
     state = (SaveDataState *)gDuel_awPlayerDeck;
     checksum = 0;
@@ -125,4 +135,5 @@ void NameEntry_Main(void)
     while ((state->duelist_code = value | checksum) == 0) {
         value = rand() << 8;
     }
+    UWP_LogMessage("[NAME_ENTRY] new-game setup complete");
 }

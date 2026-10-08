@@ -6,7 +6,6 @@
 #include "sound_output_state.h"
 #include "sound_output.h"
 #include "sound_state_control.h"
-
 void Sound_InitFrontend(void)
 {
     register volatile s32 *lbas = gFile_anLba;
@@ -16,8 +15,10 @@ void Sound_InitFrontend(void)
         lbas[FILE_LBA_INDEX_SD_SE],
         lbas[FILE_LBA_INDEX_SD_BGM],
         lbas[FILE_LBA_INDEX_MASTER_XA]);
-    while (SD_GetStatusFlags() & 8) {
-        Main_AdvanceFrame();
+    {
+        while (SD_GetStatusFlags() & 8) {
+            Main_AdvanceFrame();
+        }
     }
 }
 

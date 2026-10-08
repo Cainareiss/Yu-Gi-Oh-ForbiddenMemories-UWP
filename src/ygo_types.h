@@ -365,17 +365,21 @@ typedef char DuelEffectEntry_field_18_offset_must_be_0x18[
 
 #define TEXT_STREAM_SLOT_COUNT 22
 
+/* The retail stream-owner records store guest addresses, not host pointers.
+ * Keep each slot at four bytes in x64 UWP so the selector remains at +0x58. */
+typedef u8 * PSX_PTR32 TextStreamPointer;
+
 /* Narrow text-command view: twenty-two stream pointers place the signed
  * selector at the measured 0x58 offset. */
 typedef struct {
-    u8 *streams[TEXT_STREAM_SLOT_COUNT];
+    TextStreamPointer streams[TEXT_STREAM_SLOT_COUNT];
     s8 stream_index;
 } TextStreamOwner;
 
 /* Display-effect command view. Its depth selector follows twenty stream
  * pointers and the command state bytes at the same measured 0x58 offset. */
 typedef struct {
-    u8 *streams[20];
+    TextStreamPointer streams[20];
     u8 unk50;
     u8 state;
     u8 pad52[6];
@@ -408,13 +412,16 @@ struct DuelEffectChannel;
 typedef void (*SceneScriptRecordCallback)(void *, s32);
 typedef void (*TextBoxStateCallback)(struct DuelEffectChannel *);
 
-#if !defined(__x86_64__) && !defined(_M_X64)
+#if (!defined(__x86_64__) && !defined(_M_X64)) || defined(MEMORIES_UWP)
 typedef char TextStreamOwner_stream_index_offset_must_be_0x58[
     YGO_TYPE_OFFSET(TextStreamOwner, stream_index) == 0x58 ? 1 : -1
 ];
 typedef char EffectObject_depth_offset_must_be_0x58[
     YGO_TYPE_OFFSET(EffectObject, depth) == 0x58 ? 1 : -1
 ];
+#endif
+
+#if !defined(__x86_64__) && !defined(_M_X64)
 typedef char SceneScriptSlot_size_must_be_0x14[
     sizeof(SceneScriptSlot) == 0x14 ? 1 : -1
 ];
@@ -480,7 +487,7 @@ typedef char LibraryMotionState_size_must_be_0x48[
    TextBox_BuildStep seeds both with &D_800EB288[range_start_5C],
    DuelEffect_ProcessEntries walks from 0x24 and moves 0x20 as it compacts. */
 typedef struct DuelEffectChannel {
-    u8 *text_00;
+    u8 * PSX_PTR32 text_00;
     /* The fade callbacks in D_80090EAC reach this block. They are reached as
        bytes at 0x04-0x0A, as halfwords at 0x0C and 0x0E, and as single bytes
        at 0x13-0x15; 0x04 is additionally written as one word (0 and
@@ -513,11 +520,15 @@ typedef struct DuelEffectChannel {
     u8 field_14;
     u8 field_15;
     u8 pad_16[10];
-    DuelEffectEntry *entry_end_20;
-    DuelEffectEntry *entry_head_24;
-    struct DisplayObject *field_28;
-    struct DisplayObject *field_2C;
-    struct DisplayObject *field_30;
+    /* These are guest-RAM addresses in the original 0x64-byte record.  On
+       x64 UWP they must remain four-byte PS1 pointers; ordinary host pointers
+       made each field eight bytes and joined neighbouring object addresses
+       during the title movie teardown. */
+    DuelEffectEntry * PSX_PTR32 entry_end_20;
+    DuelEffectEntry * PSX_PTR32 entry_head_24;
+    struct DisplayObject * PSX_PTR32 field_28;
+    struct DisplayObject * PSX_PTR32 field_2C;
+    struct DisplayObject * PSX_PTR32 field_30;
     u16 flags_34;
     u16 field_36;
     u16 field_38;
@@ -936,11 +947,17 @@ struct FileTransferDescriptor {
        a volatile member keeps that store out of the slot (+0x1C bytes). */
     s32 total_bytes;
     s32 file_bytes;
-    u8 *loader_argument;
+    u8 * PSX_PTR32 loader_argument;
     /* Total byte count for the current callback-programmed transfer phase.
        func_8001513C copies it back into phase_remaining after each callback. */
     u32 phase_size;
+#if defined(MEMORIES_UWP) && defined(__x86_64__)
+    /* The PS1 record stores a 32-bit guest callback address. Native UWP
+       callbacks are kept in a host-side table. */
+    u32 phase_callback;
+#else
     FileTransferCallback phase_callback;
+#endif
     s32 absolute_lba;
     s32 phase_remaining;
     u32 status_flags;
@@ -965,7 +982,7 @@ struct FileTransferDescriptor {
         u32 word;
     } field_30;
     s32 direct_destination;
-    void *callback_data;
+    void * PSX_PTR32 callback_data;
     u32 position;
     u32 result;
     u16 buffer_index;
@@ -1185,9 +1202,9 @@ typedef struct {
     /* DisplayObjectStream_ReadNextCommand points this at the current opcode's
        operand target: base plus the little-endian halfword that follows the
        opcode. */
-    u8 *field_4C;
-    u8 *current;
-    u8 *base;
+    u8 * PSX_PTR32 field_4C;
+    u8 * PSX_PTR32 current;
+    u8 * PSX_PTR32 base;
     s16 field_58;
     s16 field_5A;
 } DisplayObjectStreamState;

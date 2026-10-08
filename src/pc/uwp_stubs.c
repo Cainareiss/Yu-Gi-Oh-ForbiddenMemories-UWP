@@ -3,6 +3,11 @@
 #include <string.h>
 
 // HD Text stubs (FreeType not used on UWP core)
+int HdText_Enabled(void) { return 0; }
+void HdText_TitleUploaded(int card, int x, int y)
+{
+    (void)card; (void)x; (void)y;
+}
 int HdText_NameEnabled(void) { return 0; }
 const uint32_t *HdText_NamePixels(uint32_t word, int *width, int *height)
 {
@@ -116,4 +121,3 @@ int nanosleep64(const struct timespec64 *req, struct timespec64 *rem)
 
 void CrashTest_Frame(void) {}
 void CrashTest_TickHang(void) {}
-

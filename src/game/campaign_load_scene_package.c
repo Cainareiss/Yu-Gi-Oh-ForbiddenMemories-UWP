@@ -14,8 +14,15 @@
 #define HIGH_MEMORY_ADDRESSES_BASE_IN_DATA
 #include "high_memory_addresses.h"
 
+#ifdef MEMORIES_UWP
+#include <stdio.h>
+extern void UWP_LogMessage(const char *msg);
+#else
+#define UWP_LogMessage(msg) ((void)0)
+#endif
+
 #define SCENE_SCRIPT_SLOT_SIGNED_HEAD(slot) (*(s16 *)(slot))
-#define CAMPAIGN_PACKAGE_WORDS(data) ((u32 *)(data))
+#define CAMPAIGN_PACKAGE_WORDS(data) ((u32 *)(uintptr_t)(data))
 
 /* Loads the fixed scene presentation/event package. The argument initializes
  * D_8009B2A4 for the event driver; it does not select a different disc page.
@@ -66,6 +73,13 @@ void Campaign_LoadScenePackage(s16 arg0)
     }
 
     src = CAMPAIGN_PACKAGE_WORDS(D_80010000);
+#ifdef MEMORIES_UWP
+    {
+        char buf[128];
+        snprintf(buf, sizeof(buf), "[CAMPAIGN] Package loaded: src=%p, D_80010000=0x%08X", (void *)src, (unsigned int)D_80010000);
+        UWP_LogMessage(buf);
+    }
+#endif
     D_800E9D70[0].x = 0x380;
     D_800E9D70[0].y = 0;
     D_800E9D70[0].w = CAMPAIGN_DIALOG_PORTRAIT_IMAGE_WORD_WIDTH;
@@ -101,5 +115,7 @@ void Campaign_LoadScenePackage(s16 arg0)
         src += CAMPAIGN_DIALOG_PORTRAIT_RECORD_SIZE / sizeof(u32);
     } while (i < CAMPAIGN_DIALOG_PORTRAIT_COUNT);
 
+    UWP_LogMessage("[CAMPAIGN] Portrait images loaded successfully into VRAM");
     D_8009B2A0 = Campaign_CreatePrimaryDisplayObject();
+    UWP_LogMessage("[CAMPAIGN] Primary display object created");
 }

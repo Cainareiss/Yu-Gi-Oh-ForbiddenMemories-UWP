@@ -137,9 +137,17 @@ extern const char D_80011918[];
 #ifdef D_8009B118_IS_POINTER_IN_DATA
 extern u8 *D_8009B118 __attribute__((section(".data")));
 #elif defined(D_8009B118_IN_DATA)
+#if defined(MEMORIES_UWP) && defined(__x86_64__)
+extern u32 D_8009B118 __attribute__((section(".data")));
+#else
 extern s32 D_8009B118 __attribute__((section(".data")));
+#endif
+#else
+#if defined(MEMORIES_UWP) && defined(__x86_64__)
+extern u32 D_8009B118;
 #else
 extern s32 D_8009B118;
+#endif
 #endif
 
 /* Address-only declarations found by re-measuring the note above rather
@@ -312,7 +320,11 @@ extern s32 D_8009B0FC;
 extern u8 D_8009B108;
 extern u8 D_8009B110;
 extern s32 D_8009B12C;
+#if defined(MEMORIES_UWP) && defined(__x86_64__)
+extern u32 D_8009B128;
+#else
 extern void (*D_8009B128)(void);
+#endif
 extern u8 D_8009B1B8;
 extern u8 D_8009B26E;
 extern u16 D_8009B33A;

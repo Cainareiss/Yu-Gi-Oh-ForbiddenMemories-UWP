@@ -1,5 +1,7 @@
 #include "AudioXAudio2.h"
 
+extern "C" void UWP_LogMessage(const char* msg);
+
 AudioXAudio2::AudioXAudio2()
 {
 }
@@ -19,15 +21,24 @@ void AudioXAudio2::OnBufferEnd(void* pBufferContext)
 
 bool AudioXAudio2::Initialize(MemoriesAudioMixCallback mixCallback)
 {
+    if (m_running)
+    {
+        UWP_LogMessage("[AUDIO] Duplicate initialization ignored; existing audio worker kept running");
+        return m_mixCallback == mixCallback;
+    }
+    // Release any partial initialization before creating a new voice.
+    Shutdown();
     m_mixCallback = mixCallback;
 
     if (FAILED(XAudio2Create(&m_xaudio2, 0, XAUDIO2_DEFAULT_PROCESSOR)))
     {
+        UWP_LogMessage("[AUDIO] XAudio2Create failed");
         return false;
     }
 
     if (FAILED(m_xaudio2->CreateMasteringVoice(&m_masterVoice)))
     {
+        UWP_LogMessage("[AUDIO] CreateMasteringVoice failed");
         return false;
     }
 
@@ -41,6 +52,7 @@ bool AudioXAudio2::Initialize(MemoriesAudioMixCallback mixCallback)
 
     if (FAILED(m_xaudio2->CreateSourceVoice(&m_sourceVoice, &wfx, 0, XAUDIO2_DEFAULT_FREQ_RATIO, this)))
     {
+        UWP_LogMessage("[AUDIO] CreateSourceVoice failed");
         return false;
     }
 
@@ -50,18 +62,24 @@ bool AudioXAudio2::Initialize(MemoriesAudioMixCallback mixCallback)
     }
 
     m_bufferEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
-    if (!m_bufferEvent) return false;
+    if (!m_bufferEvent)
+    {
+        UWP_LogMessage("[AUDIO] CreateEvent failed");
+        return false;
+    }
 
     m_running = true;
     m_audioThread = std::thread(&AudioXAudio2::AudioWorker, this);
 
     m_sourceVoice->Start(0);
+    UWP_LogMessage("[AUDIO] XAudio2 started");
     return true;
 }
 
 void AudioXAudio2::AudioWorker()
 {
     int bufferIndex = 0;
+    UWP_LogMessage("[AUDIO] worker started");
 
     // Pre-fill and submit initial buffers
     for (int i = 0; i < BufferCount; i++)

@@ -18,8 +18,7 @@ void DuelSelection_LinkDisplayObject(
         object->position.h.field_2A = object->field_30.h.field_32 - base->field_30.h.field_32;
         index = parent->index;
         object->field_6C = 1;
-        object->update =
-            (DisplayObjectCallback)DuelSelection_UpdateLinkedObject;
+        DISPLAY_OBJECT_SET_UPDATE(object, DuelSelection_UpdateLinkedObject);
         object->field_2C.h.field_2C = index;
     }
 }

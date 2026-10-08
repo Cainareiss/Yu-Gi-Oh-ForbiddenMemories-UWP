@@ -35,7 +35,7 @@ void func_8003D518(MenuRecord *record)
         object->field_48.h.field_4A = 224;
         DisplayObject_SelectOrderingTable1(object);
         DisplayObject_SetDepthOffset(object, (s8)(*(u8 *)&D_8009AF74[1] - 3));
-        object->field_4C = (s32)DisplayObject_RenderSpotlightMask;
+        DISPLAY_OBJECT_SET_4C(object, DisplayObject_RenderSpotlightMask);
         record->grid[0][1] = (s32)object;
     }
     flags = D_8009B3C1;
@@ -123,7 +123,7 @@ void func_8003D74C(MenuRecord *record)
         p->field_48.h.field_4A = 0xE0;
         DisplayObject_SelectOrderingTable1(p);
         DisplayObject_SetDepthOffset(p, (s8)(*(u8 *)&D_8009AF74[1] - 3));
-        p->field_4C = (s32)DisplayObject_RenderSpotlightMask;
+        DISPLAY_OBJECT_SET_4C(p, DisplayObject_RenderSpotlightMask);
         record->grid[0][1] = (s32)p;
         p = DisplayObject_AcquireSlot(DisplayObject_FindFreeGeneralSlot(), 2);
         DisplayObject_ConfigureSpriteAtPosition(p, 0x20, -0x40, 3, 2, 0, 0xB, 0x20C);

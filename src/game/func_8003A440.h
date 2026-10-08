@@ -3,6 +3,6 @@
 
 #include "../types.h"
 
-void func_8003A440(u8 **objects, u32 attribute, s32 value);
+void func_8003A440(u8 * PSX_PTR32 *objects, u32 attribute, s32 value);
 
 #endif

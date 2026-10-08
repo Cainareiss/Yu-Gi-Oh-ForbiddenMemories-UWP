@@ -31,7 +31,7 @@ void func_80061008(s32 x0, s32 y0, s32 x1, s32 y1)
         object->field_30.h.field_32 = record->y;
         object->field_6A = i++;
         DisplayObject_SelectOrderingTable1(object);
-        object->field_4C = (s32)CardList_RenderDeckBoxStats;
+        DISPLAY_OBJECT_SET_4C(object, CardList_RenderDeckBoxStats);
         record->object = (DuelCardDisplayObject *)object;
         record++;
     } while (i < 2);

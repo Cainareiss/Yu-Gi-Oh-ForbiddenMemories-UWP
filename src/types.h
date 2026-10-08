@@ -4,6 +4,19 @@
 #include <stddef.h>
 #include <stdint.h>
 
+/* MinGW defines __ptr32 as an empty compatibility macro. Clang's MS
+ * extension is needed for pointers stored in the original PS1 data layout. */
+#if defined(MEMORIES_UWP) && defined(__x86_64__)
+#undef __ptr32
+#define PSX_PTR32 __ptr32 __uptr
+#define PSX_PTR32_VALUE(member) (*((const u32 *)(const void *)&(member)))
+#define PSX_PTR32_HOST(type, member) ((type *)(uintptr_t)PSX_PTR32_VALUE(member))
+#else
+#define PSX_PTR32
+#define PSX_PTR32_VALUE(member) (member)
+#define PSX_PTR32_HOST(type, member) ((type *)(member))
+#endif
+
 typedef signed char s8;
 typedef unsigned char u8;
 typedef signed short s16;

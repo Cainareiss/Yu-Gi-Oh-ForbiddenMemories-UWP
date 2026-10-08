@@ -41,7 +41,7 @@ void DisplayObject_UpdateCommandStream(DisplayObject *arg0, s32 arg1, s32 arg2) 
         s32 off1, off2, off3;
         s32 mask;
 
-        base = (u8 *)arg0->field_54;
+        base = (u8 *)(uintptr_t)(u32)arg0->field_54;
         arg0->flags = arg0->flags | 0x10;
         arg0->field_58 = 0;
         arg0->field_5A = 1;

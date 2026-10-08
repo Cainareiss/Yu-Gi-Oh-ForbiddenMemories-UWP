@@ -212,7 +212,7 @@ DuelCardDisplayObject *func_80024C1C(s32 cardId, s32 x, s32 y) {
     obj->attribute = obj->attribute | DISPLAY_OBJECT_ATTRIBUTE_8BPP;
 
     desc = gDuel_adwCardStats[cardId - 1];
-    obj->field_10 = (void *)DisplayObject_SetResourceVariantFromSign;
+    obj->field_10 = (void *)DisplayObject_EncodeFunctionPointer((void *)DisplayObject_SetResourceVariantFromSign);
     obj->icon_state = 0;
     obj->field_5D = 0xC0;
 

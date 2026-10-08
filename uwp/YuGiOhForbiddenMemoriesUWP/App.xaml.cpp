@@ -38,6 +38,9 @@ App::App()
 {
     LogBoot(L"App::App() constructor entered");
     InitializeComponent();
+    // Xbox defaults to a virtual mouse even for native XAML applications.
+    // Navigation is supplied by Windows.Gaming.Input and Dear ImGui instead.
+    RequiresPointerMode = ApplicationRequiresPointerMode::WhenRequested;
     Suspending += ref new SuspendingEventHandler(this, &App::OnSuspending);
     LogBoot(L"App::App() constructor finished");
 }

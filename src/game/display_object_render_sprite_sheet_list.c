@@ -14,12 +14,12 @@ void DisplayObject_RenderSpriteSheetList(void) {
 
     if (i >= 0) {
         DisplayObject *base = D_800EFE48;
-        GsOT **t = D_800E9D90;
+        GsOT * PSX_PTR32 *t = D_800E9D90;
 
         do {
             DisplayObject *p =
-                (DisplayObject *)(i * DISPLAY_OBJECT_RECORD_SIZE + (s32)base);
-            DisplayObjectCallback f = p->update;
+                (DisplayObject *)((u8 *)base + i * DISPLAY_OBJECT_RECORD_SIZE);
+            DisplayObjectCallback f = DISPLAY_OBJECT_GET_UPDATE(p);
             u8 *q = (u8 *)p;
 
             i = p->next;

@@ -309,13 +309,13 @@ void func_800323F8(u8 *base, void *deck, s32 other, s32 flags)
     label = DisplayObject_AcquireSlot(DisplayObject_FindFreeGeneralSlot(), 6);
     label[0x67] = 0;
     *(s32 *)(label + 0x30) = *(s32 *)(object + 0x30);
-    *(s32 *)(label + 0x4C) = (s32)func_80031874;
+    DISPLAY_OBJECT_SET_4C((DisplayObject *)label, func_80031874);
     object = DisplayObject_AcquireSlot(DisplayObject_FindFreeGeneralSlot(), 2);
     DisplayObject_ConfigureSpriteAtPosition(object, 0x140, 0, 0, 4, 1, 0xC, 0x208);
     label = DisplayObject_AcquireSlot(DisplayObject_FindFreeGeneralSlot(), 6);
     label[0x67] = 1;
     *(s32 *)(label + 0x30) = *(s32 *)(object + 0x30);
-    *(s32 *)(label + 0x4C) = (s32)func_80031874;
+    DISPLAY_OBJECT_SET_4C((DisplayObject *)label, func_80031874);
     BUILD_DECK_TRANSITION_STATE_VIEW(state)->state = 2;
     object = DisplayObject_AcquireSlot(DisplayObject_FindFreeGeneralSlot(), 2);
     DisplayObject_ConfigureSpriteAtPosition(object, 0x136, 0x29, 0, 4, 0xC, 0xC, 0x208);

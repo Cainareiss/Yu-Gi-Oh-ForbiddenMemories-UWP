@@ -97,7 +97,10 @@ typedef struct {
     RECT strip;
 } MovieWorkArea;
 
-extern u8 *D_8009B498;
+/* This pointer is itself stored in the guest data segment at 0x8009B498.
+ * Keeping the host-sized pointer here overwrites D_8009B49C on x64 and turns
+ * later movie buffers into a mixed pointer/location value. */
+extern u8 * PSX_PTR32 D_8009B498;
 extern CdlLOC D_8009B49C;
 
 #endif

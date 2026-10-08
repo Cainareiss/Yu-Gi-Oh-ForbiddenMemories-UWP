@@ -15,6 +15,11 @@
 #define SD_INIT_BLOCK_10_VIEW(block) ((SDInitBlk10 *)(block))
 #define SD_INIT_BLOCK_11_VIEW(block) ((SDInitBlk11 *)(block))
 
+#if defined(MEMORIES_UWP) && defined(__x86_64__)
+static void (*s_secondary_callback)(void);
+void SD_SecondaryCallback(void) { if (s_secondary_callback) s_secondary_callback(); }
+#endif
+
 /* Brings the sound subsystem's resident state up from cold. The state block
  * starts at the end of the loaded image and runs to 0x801EA7FF; it is zeroed a
  * word at a time, the two command callbacks are installed, three tables are
@@ -45,8 +50,15 @@ void SD_InitState(u8 arg0)
         *p = 0;
         p++;
     } while (p <= (u32 *)0x801EA7FF);
+#if defined(MEMORIES_UWP) && defined(__x86_64__)
+    D_8009B0F0 = 0;
+    D_8009B120 = 0;
+    FileTransfer_SetControlCallback(FILE_TRANSFER_CB_PHASE_START, func_8004666C);
+    FileTransfer_SetControlCallback(FILE_TRANSFER_CB_PHASE_END, func_800466C8);
+#else
     D_8009B0F0 = func_8004666C;
     D_8009B120 = func_800466C8;
+#endif
     *SD_INIT_BLOCK_11_VIEW(g_SDValue->field_1619) =
         *SD_INIT_BLOCK_11_VIEW(D_80010784);
     *SD_INIT_BLOCK_10_VIEW(g_SDValue->field_1629) =
@@ -76,6 +88,11 @@ void SD_InitState(u8 arg0)
     D_8009B458->field_0509 = 0;
     sec = D_8009B458;
     st2 = g_SDValue;
+#if defined(MEMORIES_UWP) && defined(__x86_64__)
+    s_secondary_callback = SD_UpdateVoiceSlots;
+    sec->field_050C = 0;
+#else
     sec->field_050C = SD_UpdateVoiceSlots;
+#endif
     st2->flags_0040 = 0;
 }

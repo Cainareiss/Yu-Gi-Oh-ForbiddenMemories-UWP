@@ -105,7 +105,7 @@ void DuelResult_UpdateOrbitSprite(DisplayObject *arg0) {
             slot->attribute |= (GsALON | GsAONE);
             DisplayObject_SetDepthOffset(slot, (u8)arg0->field_16 - 1);
             slot->field_60 = 8;
-            slot->update = (DisplayObjectCallback)DisplayObject_FadeBrightnessAndRelease;
+            DISPLAY_OBJECT_SET_UPDATE(slot, DisplayObject_FadeBrightnessAndRelease);
         }
     }
 
@@ -203,13 +203,13 @@ void DuelScene_UpdateResultOutro(void)
         *(s16 *)&obj->position.h.field_28 = -116;
         obj->field_2C.h.field_2C = 0x30;
         obj->field_6C = 1;
-        obj->update = (DisplayObjectCallback)func_8001EC70;
+        DISPLAY_OBJECT_SET_UPDATE(obj, func_8001EC70);
         obj->position.h.field_2A = (s16)obj->field_30.h.field_32;
         obj = D_8009B21C;
         obj->position.h.field_28 = 0x198;
         obj->field_2C.h.field_2C = 0x30;
         obj->field_6C = 1;
-        obj->update = (DisplayObjectCallback)func_8001EC70;
+        DISPLAY_OBJECT_SET_UPDATE(obj, func_8001EC70);
         D_8009B174 = 1;
         obj->position.h.field_2A = (s16)obj->field_30.h.field_32;
         return;
@@ -289,8 +289,7 @@ void DuelScene_UpdateResultOutro(void)
                     obj->position.h.field_2A =
                         Rand_GetInterval(TRIG_ANGLE_FULL_TURN);
                     obj->field_6C = 1;
-                    obj->update =
-                        (DisplayObjectCallback)DuelResult_UpdateOrbitSprite;
+                    DISPLAY_OBJECT_SET_UPDATE(obj, DuelResult_UpdateOrbitSprite);
                     slots[i].object = obj;
                 }
             }
@@ -325,7 +324,7 @@ void DuelScene_UpdateResultOutro(void)
                 obj = slots[i].object;
                 if (obj != 0) {
                     obj->field_6C = 1;
-                    obj->update = (DisplayObjectCallback)func_80020EE8;
+                    DISPLAY_OBJECT_SET_UPDATE(obj, func_80020EE8);
                 }
             }
         } else {

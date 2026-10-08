@@ -28,6 +28,26 @@ typedef char FileTransfer_default_image_must_fill_sector[
         sizeof(u16) == FILE_SECTOR_SIZE ? 1 : -1
 ];
 
+#if defined(MEMORIES_UWP) && defined(__x86_64__)
+FileTransferCallback FileTransfer_GetPhaseCallback(
+    const FileTransferDescriptor *descriptor
+);
+void FileTransfer_SetPhaseCallback(
+    FileTransferDescriptor *descriptor,
+    FileTransferCallback callback
+);
+#define FILE_TRANSFER_PHASE_CALLBACK(descriptor) \
+    FileTransfer_GetPhaseCallback((descriptor))
+void FileTransfer_SetControlCallback(unsigned slot, void (*callback)(void));
+void (*FileTransfer_GetControlCallback(unsigned slot))(void);
+#define FILE_TRANSFER_CB_WAIT 0u
+#define FILE_TRANSFER_CB_PHASE_START 1u
+#define FILE_TRANSFER_CB_PHASE_END 2u
+#define FILE_TRANSFER_CB_BUSY 3u
+#else
+#define FILE_TRANSFER_PHASE_CALLBACK(descriptor) ((descriptor)->phase_callback)
+#endif
+
 void File_InitTransferState(s32);
 void File_GetPosition(s32 *, const char *);
 void File_SetTransferLocation(
@@ -155,10 +175,18 @@ void func_80014FA4(void);
  * 0x800101D8 is out of range of $gp. The attribute takes it out of small data
  * for those two; the other three do not need it.
  */
+#if defined(MEMORIES_UWP) && (defined(__x86_64__) || defined(_M_X64))
+#ifdef D_800101D8_IN_DATA
+extern u32 D_800101D8 __attribute__((section(".data")));
+#else
+extern u32 D_800101D8;
+#endif
+#else
 #ifdef D_800101D8_IN_DATA
 extern u8 *D_800101D8 __attribute__((section(".data")));
 #else
 extern u8 *D_800101D8;
+#endif
 #endif
 
 /* The per-file starting sector table the transfer setup indexes by file
@@ -268,9 +296,17 @@ extern char D_8009B104[1];
  * asm("D_8009B10C") alias of this type; the pointer is what every use
  * assigns and calls. */
 #ifdef D_8009B10C_IN_DATA
+#if defined(MEMORIES_UWP) && defined(__x86_64__)
+extern u32 D_8009B10C __attribute__((section(".data")));
+#else
 extern void (*D_8009B10C)(void) __attribute__((section(".data")));
+#endif
+#else
+#if defined(MEMORIES_UWP) && defined(__x86_64__)
+extern u32 D_8009B10C;
 #else
 extern void (*D_8009B10C)(void);
+#endif
 #endif
 extern u8 D_8009B0E0;
 /* A GsSPRITE-shaped record that File_SetPositionTable fills field by field:
@@ -293,14 +329,30 @@ void File_SetPositionTable(void);
  * File_StepActiveTransfer, but sw %lo through $at in SD_InitState, whose unit
  * defines the .data arms below for that. Initial value not read. */
 #ifdef D_8009B0F0_IN_DATA
+#if defined(MEMORIES_UWP) && defined(__x86_64__)
+extern u32 D_8009B0F0 __attribute__((section(".data")));
+#else
 extern void (*D_8009B0F0)(void) __attribute__((section(".data")));
+#endif
+#else
+#if defined(MEMORIES_UWP) && defined(__x86_64__)
+extern u32 D_8009B0F0;
 #else
 extern void (*D_8009B0F0)(void);
 #endif
+#endif
 #ifdef D_8009B120_IN_DATA
+#if defined(MEMORIES_UWP) && defined(__x86_64__)
+extern u32 D_8009B120 __attribute__((section(".data")));
+#else
 extern void (*D_8009B120)(void) __attribute__((section(".data")));
+#endif
+#else
+#if defined(MEMORIES_UWP) && defined(__x86_64__)
+extern u32 D_8009B120;
 #else
 extern void (*D_8009B120)(void);
+#endif
 #endif
 
 /* A counter the CD and stream paths bump at each step they complete. */

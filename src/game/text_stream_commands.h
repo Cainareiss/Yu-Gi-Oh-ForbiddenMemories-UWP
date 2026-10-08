@@ -45,6 +45,12 @@ void Text_SetCursorOffset(DuelEffectChannel *object);
  * only caller. Nothing else writes it, so the parameter type is not a guess:
  * it is Text_TryCompleteChoiceLayout's own, volatile qualifier included. */
 extern void (*D_8009B340)(volatile DuelEffectChannel *object);
+#if defined(__x86_64__) || defined(_M_X64)
+/* This table remains in the loaded PS1 image, whose entries are 32-bit guest
+ * addresses.  Do not give it host function-pointer stride on x64. */
+extern u32 D_80090F18[];
+#else
 extern void (*D_80090F18[])(u8 *);
+#endif
 
 #endif

@@ -8,7 +8,15 @@
 #include "stb_image.h"
 
 #include <vector>
+#include <algorithm>
 #include <cmath>
+
+#ifdef min
+#undef min
+#endif
+#ifdef max
+#undef max
+#endif
 
 static void SrvDescriptorAlloc(ImGui_ImplDX12_InitInfo* info, D3D12_CPU_DESCRIPTOR_HANDLE* out_cpu, D3D12_GPU_DESCRIPTOR_HANDLE* out_gpu)
 {
@@ -61,6 +69,11 @@ bool ImGuiFrontend::Initialize(ID3D12Device* device, ID3D12CommandQueue* command
     ImGuiIO& io = ImGui::GetIO();
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
+    io.ConfigNavMoveSetMousePos = false;
+    io.ConfigNavEscapeClearFocusItem = false;
+    io.ConfigNavCursorVisibleAlways = true;
+    io.MouseDrawCursor = false;
+    io.IniFilename = nullptr;
     io.DisplaySize = ImVec2((float)width, (float)height);
 
     ApplyEgyptianTheme();
@@ -374,30 +387,15 @@ void ImGuiFrontend::OnCharacter(wchar_t ch)
     ImGui::GetIO().AddInputCharacter((unsigned int)ch);
 }
 
-void ImGuiFrontend::UpdateGamepad(uint16_t padBits)
+void ImGuiFrontend::UpdateGamepad(uint16_t padBits, bool connected, bool inGame)
 {
-    ImGuiIO& io = ImGui::GetIO();
-    uint16_t pressed = padBits & (~m_prevPadBits);
-    m_prevPadBits = padBits;
-
-    // PS1 Pad Bits / XInput:
-    // UP = 0x1000, DOWN = 0x4000, LEFT = 0x8000, RIGHT = 0x2000
-    // CROSS (A) = 0x0040, CIRCLE (B) = 0x0020, TRIANGLE (Y) = 0x0010, SQUARE (X) = 0x0080
-    // START = 0x0008, SELECT = 0x0001
-    io.AddKeyEvent(ImGuiKey_GamepadDpadUp,    (padBits & 0x1000) != 0);
-    io.AddKeyEvent(ImGuiKey_GamepadDpadDown,  (padBits & 0x4000) != 0);
-    io.AddKeyEvent(ImGuiKey_GamepadDpadLeft,  (padBits & 0x8000) != 0);
-    io.AddKeyEvent(ImGuiKey_GamepadDpadRight, (padBits & 0x2000) != 0);
-
-    io.AddKeyEvent(ImGuiKey_GamepadFaceDown,  (padBits & 0x0040) != 0); // A / Cross
-    io.AddKeyEvent(ImGuiKey_GamepadFaceRight, (padBits & 0x0020) != 0); // B / Circle
-    io.AddKeyEvent(ImGuiKey_GamepadFaceUp,    (padBits & 0x0010) != 0); // Y / Triangle
-    io.AddKeyEvent(ImGuiKey_GamepadFaceLeft,  (padBits & 0x0080) != 0); // X / Square
-
-    if (pressed & 0x0008) // Start button
+    if (!m_initialized) return;
+    if (m_gamepadInput.Update(padBits, connected, inGame, m_inGameMenuOpen))
     {
         ToggleInGameMenu();
+        m_focusInGameMenu = m_inGameMenuOpen;
     }
+    if (inGame) m_focusMainMenu = true;
 }
 
 void ImGuiFrontend::NewFrame()
@@ -417,30 +415,46 @@ void ImGuiFrontend::Render(ID3D12GraphicsCommandList* commandList)
 void ImGuiFrontend::DrawEgyptianDivider(float centerX, float centerY, float width)
 {
     ImDrawList* drawList = ImGui::GetWindowDrawList();
+    const float scale = std::max(0.60f, std::min(1.0f, width / 360.0f));
     float halfWidth = width * 0.5f;
 
     // Left gold bar with gradient opacity (#AA8833)
     drawList->AddLine(
         ImVec2(centerX - halfWidth, centerY),
-        ImVec2(centerX - 35.0f, centerY),
+        ImVec2(centerX - 35.0f * scale, centerY),
         IM_COL32(170, 136, 51, 140), 2.0f);
 
     // Center Egyptian Millennium / Eye of Horus Emblem in #D4AF37
     // Inverted Triangle (Millennium Puzzle shape)
-    ImVec2 pTopLeft(centerX - 16.0f, centerY - 8.0f);
-    ImVec2 pTopRight(centerX + 16.0f, centerY - 8.0f);
-    ImVec2 pBottom(centerX, centerY + 12.0f);
-    drawList->AddTriangle(pTopLeft, pTopRight, pBottom, IM_COL32(212, 175, 55, 230), 2.0f);
+    ImVec2 pTopLeft(centerX - 16.0f * scale, centerY - 8.0f * scale);
+    ImVec2 pTopRight(centerX + 16.0f * scale, centerY - 8.0f * scale);
+    ImVec2 pBottom(centerX, centerY + 12.0f * scale);
+    drawList->AddTriangle(pTopLeft, pTopRight, pBottom, IM_COL32(212, 175, 55, 230), 2.0f * scale);
 
     // Eye arc and pupil
-    drawList->AddCircleFilled(ImVec2(centerX, centerY - 1.0f), 3.0f, IM_COL32(255, 215, 0, 255));
-    drawList->AddLine(ImVec2(centerX - 9.0f, centerY - 3.0f), ImVec2(centerX + 9.0f, centerY - 3.0f), IM_COL32(212, 175, 55, 200), 1.5f);
+    drawList->AddCircleFilled(ImVec2(centerX, centerY - 1.0f * scale), 3.0f * scale, IM_COL32(255, 215, 0, 255));
+    drawList->AddLine(ImVec2(centerX - 9.0f * scale, centerY - 3.0f * scale), ImVec2(centerX + 9.0f * scale, centerY - 3.0f * scale), IM_COL32(212, 175, 55, 200), 1.5f * scale);
 
     // Right gold bar with gradient opacity (#AA8833)
     drawList->AddLine(
-        ImVec2(centerX + 35.0f, centerY),
+        ImVec2(centerX + 35.0f * scale, centerY),
         ImVec2(centerX + halfWidth, centerY),
         IM_COL32(170, 136, 51, 140), 2.0f);
+}
+
+static void DrawGoldStar(ImDrawList* drawList, ImVec2 center, float radius)
+{
+    ImVec2 points[10];
+    for (int i = 0; i < 10; ++i)
+    {
+        const float angle = -3.14159265358979323846f * 0.5f +
+                            static_cast<float>(i) * 3.14159265358979323846f / 5.0f;
+        const float pointRadius = (i & 1) ? radius * 0.42f : radius;
+        points[i] = ImVec2(center.x + std::cos(angle) * pointRadius,
+                            center.y + std::sin(angle) * pointRadius);
+    }
+    drawList->AddConvexPolyFilled(points, 10, IM_COL32(255, 215, 0, 255));
+    drawList->AddPolyline(points, 10, IM_COL32(212, 175, 55, 255), ImDrawFlags_Closed, 1.0f);
 }
 
 void ImGuiFrontend::DrawMainMenu(const std::wstring& activeRomPath, bool isRomValid,
@@ -463,6 +477,7 @@ void ImGuiFrontend::DrawMainMenu(const std::wstring& activeRomPath, bool isRomVa
                              ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar |
                              ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoBringToFrontOnFocus;
 
+    if (m_focusMainMenu) ImGui::SetNextWindowFocus();
     ImGui::Begin("##MainMenuCanvas", nullptr, flags);
     ImDrawList* drawList = ImGui::GetWindowDrawList();
 
@@ -479,18 +494,25 @@ void ImGuiFrontend::DrawMainMenu(const std::wstring& activeRomPath, bool isRomVa
         drawList->AddCircleFilled(glowCenter, r, IM_COL32(27, 13, 45, alpha));
     }
 
-    // 3. Top Section: Centered Yu-Gi-Oh! Forbidden Memories Logo
-    float logoY = screenH * 0.08f;
+    // 3. Responsive centered layout. Base all coordinates on the actual
+    // SwapChainPanel size so the settings button remains visible at 600p.
+    const float layoutScale = std::max(0.60f, std::min(1.0f, (screenH - 24.0f) / 620.0f));
+    const float horizontalMargin = 24.0f;
+    const float logoW = std::min(400.0f * layoutScale, screenW - horizontalMargin * 2.0f);
+    const float logoH = m_logoLoaded ? logoW * 0.75f : 190.0f * layoutScale;
+    const float dividerGap = 10.0f * layoutScale;
+    const float startGap = 24.0f * layoutScale;
+    const float btnW = std::min(360.0f * layoutScale, screenW - horizontalMargin * 2.0f);
+    const float btnH = std::max(40.0f, 52.0f * layoutScale);
+    const float buttonGap = std::max(8.0f, 14.0f * layoutScale);
+    const float statusGap = 16.0f * layoutScale;
+    const float statusHeight = 18.0f * layoutScale;
+    const float contentHeight = logoH + dividerGap + startGap + btnH * 4.0f +
+                                buttonGap * 3.0f + statusGap + statusHeight;
+    const float logoY = std::max(12.0f, (screenH - contentHeight) * 0.5f);
     if (m_logoLoaded)
     {
         // Render 400x300 logo from SVG design
-        float logoW = 400.0f;
-        float logoH = 300.0f;
-        if (screenH < 720.0f)
-        {
-            logoW = 320.0f;
-            logoH = 240.0f;
-        }
         ImVec2 logoPos(centerX - logoW * 0.5f, logoY);
         drawList->AddImage((ImTextureID)m_logoGpuHandle.ptr,
                            logoPos,
@@ -516,14 +538,13 @@ void ImGuiFrontend::DrawMainMenu(const std::wstring& activeRomPath, bool isRomVa
     }
 
     // 4. Ornamental Egyptian Gold Divider at y ~ 429
-    float dividerY = logoY + (m_logoLoaded ? 315.0f : 210.0f);
-    DrawEgyptianDivider(centerX, dividerY, 360.0f);
+    const float dividerY = logoY + logoH + dividerGap;
+    DrawEgyptianDivider(centerX, dividerY,
+                        std::min(360.0f * layoutScale, screenW - horizontalMargin * 2.0f));
 
-    // 5. Four Main Action Buttons (Width: 360px, Height: 52px, Rounded: 8px)
-    float btnW = 360.0f;
-    float btnH = 52.0f;
-    float startY = dividerY + 36.0f;
-    float btnX = centerX - btnW * 0.5f;
+    // 5. Four main action buttons, all inside the visible panel.
+    const float startY = dividerY + startGap;
+    const float btnX = centerX - btnW * 0.5f;
 
     // --- BUTTON 1: SELECIONAR JOGO ---
     ImGui::SetCursorPos(ImVec2(btnX, startY));
@@ -540,8 +561,8 @@ void ImGuiFrontend::DrawMainMenu(const std::wstring& activeRomPath, bool isRomVa
     ImGui::PopStyleVar(2);
     ImGui::PopStyleColor(3);
 
-    // --- BUTTON 2: ★ INICIAR JOGO ★ (Highlighted Active with Gold Border & Glow) ---
-    float btn2Y = startY + btnH + 14.0f;
+    // --- BUTTON 2: INICIAR JOGO (gold anime stars are drawn geometrically) ---
+    const float btn2Y = startY + btnH + buttonGap;
     ImGui::SetCursorPos(ImVec2(btnX, btn2Y));
 
     // Gold outer glow drop-shadow behind INICIAR JOGO
@@ -557,15 +578,30 @@ void ImGuiFrontend::DrawMainMenu(const std::wstring& activeRomPath, bool isRomVa
     ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 8.0f);
     ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 2.0f);
 
-    if (ImGui::Button("★   INICIAR JOGO   ★", ImVec2(btnW, btnH)))
+    if (ImGui::Button("INICIAR JOGO", ImVec2(btnW, btnH)))
     {
         if (onPlayGame) onPlayGame();
+    }
+    if (m_focusMainMenu)
+    {
+        ImGui::SetKeyboardFocusHere(-1);
+        m_focusMainMenu = false;
     }
     ImGui::PopStyleVar(2);
     ImGui::PopStyleColor(4);
 
+    const float starRadius = std::max(4.0f, 6.0f * layoutScale);
+    const float starGap = 8.0f * layoutScale;
+    const float labelWidth = ImGui::CalcTextSize("INICIAR JOGO").x;
+    DrawGoldStar(drawList,
+                 ImVec2(centerX - labelWidth * 0.5f - starGap - starRadius,
+                        btn2Y + btnH * 0.5f), starRadius);
+    DrawGoldStar(drawList,
+                 ImVec2(centerX + labelWidth * 0.5f + starGap + starRadius,
+                        btn2Y + btnH * 0.5f), starRadius);
+
     // --- BUTTON 3: MODS ---
-    float btn3Y = btn2Y + btnH + 14.0f;
+    const float btn3Y = btn2Y + btnH + buttonGap;
     ImGui::SetCursorPos(ImVec2(btnX, btn3Y));
     ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(14.f/255.f, 10.f/255.f, 26.f/255.f, 0.70f));
     ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(42.f/255.f, 31.f/255.f, 66.f/255.f, 1.00f));
@@ -575,13 +611,14 @@ void ImGuiFrontend::DrawMainMenu(const std::wstring& activeRomPath, bool isRomVa
 
     if (ImGui::Button("MODS", ImVec2(btnW, btnH)))
     {
-        m_showModsModal = !m_showModsModal;
+        m_showModsModal = true;
+        ImGui::OpenPopup("MODS");
     }
     ImGui::PopStyleVar(2);
     ImGui::PopStyleColor(3);
 
-    // --- BUTTON 4: CONFIGURAÇÕES ---
-    float btn4Y = btn3Y + btnH + 14.0f;
+    // --- BUTTON 4: CONFIGURACOES ---
+    const float btn4Y = btn3Y + btnH + buttonGap;
     ImGui::SetCursorPos(ImVec2(btnX, btn4Y));
     ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(14.f/255.f, 10.f/255.f, 26.f/255.f, 0.70f));
     ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(42.f/255.f, 31.f/255.f, 66.f/255.f, 1.00f));
@@ -589,30 +626,31 @@ void ImGuiFrontend::DrawMainMenu(const std::wstring& activeRomPath, bool isRomVa
     ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 8.0f);
     ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.5f);
 
-    if (ImGui::Button("CONFIGURAÇÕES", ImVec2(btnW, btnH)))
+    if (ImGui::Button("CONFIGURACOES", ImVec2(btnW, btnH)))
     {
-        m_showSettingsModal = !m_showSettingsModal;
+        m_showSettingsModal = true;
+        ImGui::OpenPopup("CONFIGURACOES");
     }
     ImGui::PopStyleVar(2);
     ImGui::PopStyleColor(3);
 
     // 6. Status Line Footer
-    float statusY = btn4Y + btnH + 24.0f;
+    const float statusY = btn4Y + btnH + statusGap;
     if (isRomValid)
     {
-        const char* status = "● ROM PRONTA • SLUS-01411 (USA) • DIRECTX 12 • 60 FPS";
+        const char* status = "ROM PRONTA - SLUS-01411 - DX12 - 60 FPS";
         ImVec2 sz = ImGui::CalcTextSize(status);
         drawList->AddText(ImVec2(centerX - sz.x * 0.5f, statusY), IM_COL32(74, 232, 120, 255), status);
     }
     else
     {
-        const char* status = "Atenção: Selecione uma imagem de disco (.bin) para iniciar o duelo";
+        const char* status = "Selecione uma imagem de disco (.BIN) para iniciar";
         ImVec2 sz = ImGui::CalcTextSize(status);
         drawList->AddText(ImVec2(centerX - sz.x * 0.5f, statusY), IM_COL32(212, 175, 55, 230), status);
     }
 
     // Modal: MODS
-    if (m_showModsModal)
+    if (m_showModsModal || ImGui::IsPopupOpen("MODS"))
     {
         ImGui::SetNextWindowSize(ImVec2(480, 360), ImGuiCond_Always);
         ImGui::SetNextWindowPos(ImVec2(centerX - 240, screenH * 0.5f - 180), ImGuiCond_Always);
@@ -620,7 +658,7 @@ void ImGuiFrontend::DrawMainMenu(const std::wstring& activeRomPath, bool isRomVa
         ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.83f, 0.69f, 0.22f, 1.00f)); // Gold border
         ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 2.0f);
 
-        if (ImGui::Begin("MODS & EXPANSÕES", &m_showModsModal, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize))
+        if (ImGui::BeginPopupModal("MODS", &m_showModsModal, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize))
         {
             ImGui::Spacing();
             ImGui::TextColored(ImVec4(1.0f, 0.84f, 0.0f, 1.0f), "Ajustes de Gameplay & Regras:");
@@ -628,6 +666,7 @@ void ImGuiFrontend::DrawMainMenu(const std::wstring& activeRomPath, bool isRomVa
             ImGui::Spacing();
 
             ImGui::Checkbox("Drop de Todas as 722 Cartas (Correção de Drop)", &m_settings.dropMissingCards);
+            ImGui::SetItemDefaultFocus();
             ImGui::Spacing();
             ImGui::Checkbox("IA Aprimorada (Modo Desafio / Hard Mode)", &m_settings.aiHardMode);
             ImGui::Spacing();
@@ -639,18 +678,21 @@ void ImGuiFrontend::DrawMainMenu(const std::wstring& activeRomPath, bool isRomVa
             ImGui::Separator();
             ImGui::Spacing();
 
-            if (ImGui::Button("Fechar", ImVec2(120, 36)))
+            const bool cancelMods = ImGui::IsWindowFocused() &&
+                (ImGui::IsKeyPressed(ImGuiKey_GamepadFaceRight) || ImGui::IsKeyPressed(ImGuiKey_Escape));
+            if (ImGui::Button("Fechar", ImVec2(120, 36)) || cancelMods)
             {
                 m_showModsModal = false;
+                ImGui::CloseCurrentPopup();
             }
-            ImGui::End();
+            ImGui::EndPopup();
         }
         ImGui::PopStyleVar();
         ImGui::PopStyleColor(2);
     }
 
     // Modal: CONFIGURAÇÕES
-    if (m_showSettingsModal)
+    if (m_showSettingsModal || ImGui::IsPopupOpen("CONFIGURACOES"))
     {
         ImGui::SetNextWindowSize(ImVec2(520, 420), ImGuiCond_Always);
         ImGui::SetNextWindowPos(ImVec2(centerX - 260, screenH * 0.5f - 210), ImGuiCond_Always);
@@ -658,7 +700,7 @@ void ImGuiFrontend::DrawMainMenu(const std::wstring& activeRomPath, bool isRomVa
         ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.83f, 0.69f, 0.22f, 1.00f));
         ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 2.0f);
 
-        if (ImGui::Begin("CONFIGURAÇÕES DO MOTOR DX12", &m_showSettingsModal, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize))
+        if (ImGui::BeginPopupModal("CONFIGURACOES", &m_showSettingsModal, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize))
         {
             ImGui::Spacing();
             ImGui::TextColored(ImVec4(1.0f, 0.84f, 0.0f, 1.0f), "Gráficos & Renderização DirectX 12:");
@@ -671,6 +713,7 @@ void ImGuiFrontend::DrawMainMenu(const std::wstring& activeRomPath, bool isRomVa
             {
                 m_settings.resolutionScale = (currentResIdx == 0) ? 1 : (currentResIdx == 1) ? 2 : 4;
             }
+            ImGui::SetItemDefaultFocus();
             ImGui::Spacing();
 
             const char* aspectOptions[] = { "4:3 Clássico (Pillarbox)", "16:9 Widescreen Nativo" };
@@ -699,11 +742,14 @@ void ImGuiFrontend::DrawMainMenu(const std::wstring& activeRomPath, bool isRomVa
             ImGui::Separator();
             ImGui::Spacing();
 
-            if (ImGui::Button("Salvar & Fechar", ImVec2(160, 36)))
+            const bool cancelSettings = ImGui::IsWindowFocused() &&
+                (ImGui::IsKeyPressed(ImGuiKey_GamepadFaceRight) || ImGui::IsKeyPressed(ImGuiKey_Escape));
+            if (ImGui::Button("Salvar & Fechar", ImVec2(160, 36)) || cancelSettings)
             {
                 m_showSettingsModal = false;
+                ImGui::CloseCurrentPopup();
             }
-            ImGui::End();
+            ImGui::EndPopup();
         }
         ImGui::PopStyleVar();
         ImGui::PopStyleColor(2);
@@ -742,6 +788,7 @@ void ImGuiFrontend::DrawInGameOverlay(bool* pOpen,
     ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 12.0f);
 
     ImGuiWindowFlags flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse;
+    if (m_focusInGameMenu) ImGui::SetNextWindowFocus();
     if (ImGui::Begin("MENU DE PAUSA • EGÍPCIO", pOpen, flags))
     {
         ImGui::Spacing();
@@ -755,6 +802,11 @@ void ImGuiFrontend::DrawInGameOverlay(bool* pOpen,
         {
             *pOpen = false;
             if (onResume) onResume();
+        }
+        if (m_focusInGameMenu)
+        {
+            ImGui::SetKeyboardFocusHere(-1);
+            m_focusInGameMenu = false;
         }
         ImGui::Spacing();
 
@@ -787,8 +839,8 @@ void ImGuiFrontend::DrawInGameOverlay(bool* pOpen,
         }
         ImGui::PopStyleColor(2);
 
-        ImGui::End();
     }
+    ImGui::End();
     ImGui::PopStyleVar(2);
     ImGui::PopStyleColor(2);
 }

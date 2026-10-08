@@ -62,6 +62,12 @@ void File_ActivateTransfer(void)
 {
     *(FileTransferDescriptorWords *)&gFile_PrimaryTransferDescriptor =
         *(FileTransferDescriptorWords *)&gFile_SecondaryTransferDescriptor;
+#if defined(MEMORIES_UWP) && defined(__x86_64__)
+    FileTransfer_SetPhaseCallback(
+        &gFile_PrimaryTransferDescriptor,
+        FileTransfer_GetPhaseCallback(&gFile_SecondaryTransferDescriptor)
+    );
+#endif
     *(FileRequestSlot *)D_801D4200_raw =
         *(FileRequestSlot *)(D_801D4200_raw + 32);
     if (gFile_PrimaryTransferDescriptor.done == 4)
@@ -119,7 +125,11 @@ void File_StepActiveTransfer(void)
                 return;
             }
             D_8009B0F4 = D_8009B0F4 | FILE_TRANSFER_STATE_COMMAND_BUSY;
+#if defined(MEMORIES_UWP) && defined(__x86_64__)
+            cb = FileTransfer_GetControlCallback(FILE_TRANSFER_CB_PHASE_END);
+#else
             cb = D_8009B120;
+#endif
             goto call_back;
         case 2:
             D_8009B112 = D_8009B112 & 0xDFFF;
@@ -160,7 +170,11 @@ set_state3:
             D_8009B0EC = 0x258;
             D_8009B112 = D_8009B112 & 0xEFFF;
             D_8009B112 = D_8009B112 | 0x4000;
+#if defined(MEMORIES_UWP) && defined(__x86_64__)
+            cb2 = FileTransfer_GetControlCallback(FILE_TRANSFER_CB_PHASE_START);
+#else
             cb2 = D_8009B0F0;
+#endif
             if (cb2 != 0) {
                 cb2();
             }
@@ -172,7 +186,11 @@ set_state3:
                 }
             }
             D_8009B112 = D_8009B112 & 0x3FFC;
+#if defined(MEMORIES_UWP) && defined(__x86_64__)
+            cb = FileTransfer_GetControlCallback(FILE_TRANSFER_CB_PHASE_END);
+#else
             cb = D_8009B120;
+#endif
             D_8009B112 = D_8009B112 | 2;
 call_back:
             if (cb != 0) {
@@ -219,8 +237,8 @@ call_back:
     }
     if (!(D_8009B0F4 & 0x800000)) {
         D_8009B0F4 = D_8009B0F4 | 0x800000;
-        if (p->phase_callback != 0) {
-            p->phase_callback(p, p->result++);
+        if (FILE_TRANSFER_PHASE_CALLBACK(p) != 0) {
+            FILE_TRANSFER_PHASE_CALLBACK(p)(p, p->result++);
         }
         p->phase_remaining = p->phase_size;
         return;
@@ -326,7 +344,11 @@ fix:
         object->phase_size = -(value << FILE_SECTOR_SHIFT);
     return;
 tail:
+#if defined(MEMORIES_UWP) && defined(__x86_64__)
+    callback = FileTransfer_GetControlCallback(FILE_TRANSFER_CB_BUSY);
+#else
     callback = D_8009B128;
+#endif
     if (callback != 0)
         callback();
 }

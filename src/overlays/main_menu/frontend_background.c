@@ -107,7 +107,7 @@ void MainMenu_StartFrontendEntryTransition(s32 mode)
     s32 offset;
     /* The entries are display objects; gMain_apMenuEntries keeps its u8 *
        declaration for its other users. */
-    DisplayObject **entries = (DisplayObject **)gMain_apMenuEntries;
+    DisplayObject * PSX_PTR32 *entries = (DisplayObject * PSX_PTR32 *)gMain_apMenuEntries;
 
     for (i = 0; i < 0xB; i++) {
         if (i & 1) {
@@ -163,8 +163,8 @@ void MainMenu_SpawnFrontendEntryAfterimage(DisplayObject *entry)
             DISPLAY_OBJECT_FLAG_RENDERABLE | DISPLAY_OBJECT_FLAG_SCREEN_SPACE;
         DisplayObject_SelectOrderingTable1(object);
         DisplayObject_SetDepthOffset(object, (s8)(-(u8)entry->field_60));
-        object->update =
-            (DisplayObjectCallback)MainMenu_UpdateFrontendEntryAfterimage;
+        DISPLAY_OBJECT_SET_UPDATE(object,
+            MainMenu_UpdateFrontendEntryAfterimage);
         ((u8 *)&object->field_0C)[0] = ((u8 *)&entry->field_0C)[0];
         ((u8 *)&object->field_0C)[1] = ((u8 *)&entry->field_0C)[1];
         ((u8 *)&object->field_0C)[2] = ((u8 *)&entry->field_0C)[2];

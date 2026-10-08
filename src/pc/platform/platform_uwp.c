@@ -1,7 +1,12 @@
 #define _GNU_SOURCE
 #include "platform.h"
 #include "platform_uwp.h"
+#include "win32.h"
 #include "../debug/monitor.h"
+#include "pc/platform/settings.h"
+#include "pc/mods/mods.h"
+#include "pc/audio/spu.h"
+#include "pc/sdk/display.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -12,6 +17,7 @@
 #endif
 
 // Decoupled C hooks provided by the UWP frontend (GameEngineBridge.cpp)
+void UWP_LogMessage(const char *msg);
 void UWP_OnPresent(const uint32_t *pixels, int width, int height, int stride);
 uint16_t UWP_OnGetPadBits(int port);
 int UWP_IsWidescreen(void);
@@ -29,10 +35,20 @@ int Platform_Open(const char *title)
 {
     (void)title;
     Platform_UWP_Init();
+
+    /* The desktop menu normally performs this initialization.  UWP has no
+       desktop menu, so do it here before cards/text and the game are built. */
+    Settings_Load();
+    Spu_SetOutputVolume(Settings_Get(SET_MASTER_VOLUME));
+    Spu_SetBusVolume(SPU_BUS_MUSIC, Settings_Get(SET_MUSIC_VOLUME));
+    Spu_SetBusVolume(SPU_BUS_SFX, Settings_Get(SET_SFX_VOLUME));
+    Spu_SetBusVolume(SPU_BUS_STREAM, Settings_Get(SET_STREAM_VOLUME));
+    Memories_SetInternalScale(Settings_Get(SET_INTERNAL_SCALE));
+    Mods_Load();
+    UWP_LogMessage("[UWP] settings and shipped mods loaded");
     return 0;
 }
 
-void UWP_LogMessage(const char *msg);
 void UWP_SetLastError(const char *err);
 
 void Platform_ShowError(const char *title, const char *message)
@@ -210,15 +226,26 @@ MonitorShared *Monitor_Shared(void)
     return &s_monitor;
 }
 
-void Win32_StartInterrupt(void (*handler)(uintptr_t, void *)) { (void)handler; }
+int Win32_StartInterrupt(void (*handler)(uintptr_t, void *)) { (void)handler; return -1; }
 void Win32_StopInterrupt(void) {}
 void Win32_ServiceInterrupt(void) {}
-int Win32_ClockRepairs(void) { return 0; }
-void Win32_StartWatch(void) {}
-void Win32_SetStallReporter(void (*report)(void *), void *context) { (void)report; (void)context; }
+void Win32_ClockRepairs(unsigned *lost, unsigned *undone, unsigned *skipped)
+{
+    if (lost) *lost = 0;
+    if (undone) *undone = 0;
+    if (skipped) *skipped = 0;
+}
+int Win32_StartWatch(void) { return 0; }
+void Win32_SetStallReporter(void (*report)(void *), unsigned seconds) { (void)report; (void)seconds; }
 void Win32_Heartbeat(void) {}
 int Win32_Restart(void) { return -1; }
-int Win32_ImageRange(uintptr_t *low, uintptr_t *high) { (void)low; (void)high; return 0; }
+void Win32_ImageRange(uintptr_t *low, uintptr_t *high)
+{
+    const unsigned char *base = (const unsigned char *)GetModuleHandleW(NULL);
+    const IMAGE_DOS_HEADER *dos = (const IMAGE_DOS_HEADER *)base;
+    const IMAGE_NT_HEADERS *nt = (const IMAGE_NT_HEADERS *)(base + dos->e_lfanew);
+    *low = (uintptr_t)base;
+    *high = *low + nt->OptionalHeader.SizeOfImage;
+}
 
 int Memories_SigProcMask(int how, const void *set, void *oldset) { (void)how; (void)set; (void)oldset; return 0; }
-

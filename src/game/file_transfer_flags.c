@@ -14,14 +14,24 @@ FileTransferDescriptor *File_RequestAsyncTransfer(
     FileTransferDescriptor *result;
 
     D_8009B0F4 |= FILE_TRANSFER_STATE_PRIMARY_REQUEST_LOCKED;
-    if (D_8009B10C == 0) {
+    if (
+#if defined(MEMORIES_UWP) && defined(__x86_64__)
+        FileTransfer_GetControlCallback(FILE_TRANSFER_CB_WAIT) == 0
+#else
+        D_8009B10C == 0
+#endif
+    ) {
         if (((D_8009B0F4 & FILE_TRANSFER_REQUEST_BLOCKED_MASK) |
              D_8009B134) != 0) {
             result = (FileTransferDescriptor *)0;
             goto out;
         }
     } else {
+#if defined(MEMORIES_UWP) && defined(__x86_64__)
+        FileTransfer_GetControlCallback(FILE_TRANSFER_CB_WAIT)();
+#else
         D_8009B10C();
+#endif
     }
     File_InitTransferDescriptor(
         &gFile_PrimaryTransferDescriptor,
@@ -44,13 +54,23 @@ FileTransferDescriptor *File_TryRequestAsyncTransfer(
     s32 arg6
 )
 {
-    if (D_8009B10C == 0) {
+    if (
+#if defined(MEMORIES_UWP) && defined(__x86_64__)
+        FileTransfer_GetControlCallback(FILE_TRANSFER_CB_WAIT) == 0
+#else
+        D_8009B10C == 0
+#endif
+    ) {
         if (((D_8009B0F4 & FILE_TRANSFER_REQUEST_BLOCKED_MASK) |
              D_8009B134) != 0) {
             return (FileTransferDescriptor *)0;
         }
     } else {
+#if defined(MEMORIES_UWP) && defined(__x86_64__)
+        FileTransfer_GetControlCallback(FILE_TRANSFER_CB_WAIT)();
+#else
         D_8009B10C();
+#endif
     }
     File_InitTransferDescriptor(
         &gFile_PrimaryTransferDescriptor,
@@ -124,10 +144,10 @@ void func_8001513C(FileTransferDescriptor *object)
     object->phase_remaining -= FILE_SECTOR_SIZE;
     if (object->phase_remaining <= 0) {
         object->phase_size = 0;
-        if (object->phase_callback != 0) {
+        if (FILE_TRANSFER_PHASE_CALLBACK(object) != 0) {
             s32 count = object->result++;
 
-            object->phase_callback(object, count);
+            FILE_TRANSFER_PHASE_CALLBACK(object)(object, count);
         }
         object->phase_remaining = object->phase_size;
     }

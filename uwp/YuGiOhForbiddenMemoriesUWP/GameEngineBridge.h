@@ -7,6 +7,8 @@
 #include <atomic>
 #include <thread>
 #include <functional>
+#include <mutex>
+#include <vector>
 
 struct GameSettings
 {
@@ -17,6 +19,7 @@ struct GameSettings
     bool monsters3D = true;
     bool aiHardMode = false;
     bool dropMissingCards = true;
+    float masterVolume = 1.0f;
     int activeSaveSlot = 1;
 };
 
@@ -35,17 +38,18 @@ public:
     bool IsPaused() const { return m_paused; }
 
     void SetSettings(const GameSettings& settings);
-    const GameSettings& GetSettings() const { return m_settings; }
+    GameSettings GetSettings() const { std::lock_guard<std::mutex> lock(m_stateMutex); return m_settings; }
 
     void QuickSave(int slot);
     void QuickLoad(int slot);
 
-    std::string GetLastError() const { return m_lastError; }
-    void SetLastError(const std::string& err) { m_lastError = err; }
+    std::string GetLastError() const { std::lock_guard<std::mutex> lock(m_stateMutex); return m_lastError; }
+    void SetLastError(const std::string& err) { std::lock_guard<std::mutex> lock(m_stateMutex); m_lastError = err; }
     bool HasFirstFramePresented() const { return m_firstFramePresented; }
 
     // Callbacks from platform layer
     void OnPresent(const uint32_t* pixels, int width, int height, int stride);
+    void PresentPendingFrame(); // Called only by the UI rendering loop.
     uint16_t OnGetPadBits(int port);
     bool OnStartAudio(MemoriesAudioMixCallback mixCallback);
 
@@ -59,6 +63,12 @@ private:
     GameSettings m_settings;
     std::wstring m_romPath;
     std::string m_lastError;
+    mutable std::mutex m_stateMutex;
+    std::mutex m_lifecycleMutex;
+    std::mutex m_frameMutex;
+    std::vector<uint32_t> m_pendingFrame;
+    int m_frameWidth = 0, m_frameHeight = 0;
+    bool m_frameReady = false;
 
     std::atomic<bool> m_running{ false };
     std::atomic<bool> m_paused{ false };
@@ -68,4 +78,5 @@ private:
     std::thread m_gameThread;
 
     void GameThreadEntryPoint();
+    void StopGameLocked();
 };

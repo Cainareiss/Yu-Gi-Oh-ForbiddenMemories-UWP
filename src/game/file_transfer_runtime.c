@@ -78,7 +78,7 @@ void File_TransferReadyCallback(s32 arg)
         if ((D_8009B0F4 & 0x200000) == 0) {
             if ((D_8009B0F4 & 0x40000000) == 0) {
                 CdGetSector(
-                    (void *)p->value_08,
+                    (void *)(uintptr_t)(u32)p->value_08,
                     FILE_SECTOR_SIZE / sizeof(u32)
                 );
             } else {
@@ -87,7 +87,7 @@ void File_TransferReadyCallback(s32 arg)
                 src = D_8009B0F8;
                 do {
                     word = src[i];
-                    ((u32 *)t->value_08)[i] = word;
+                    ((u32 *)(uintptr_t)(u32)t->value_08)[i] = word;
                     i++;
                 } while (i < (s32)(FILE_SECTOR_SIZE / sizeof(u32)));
             }
@@ -106,8 +106,8 @@ void File_TransferReadyCallback(s32 arg)
         q->phase_remaining -= FILE_SECTOR_SIZE;
         if (q->phase_remaining <= 0) {
             q->phase_size = 0;
-            if (q->phase_callback != 0) {
-                q->phase_callback(q, q->result++);
+            if (FILE_TRANSFER_PHASE_CALLBACK(q) != 0) {
+                FILE_TRANSFER_PHASE_CALLBACK(q)(q, q->result++);
             }
             q->phase_remaining = q->phase_size;
         }
@@ -121,9 +121,9 @@ void File_TransferReadyCallback(s32 arg)
            `(&p->value_08)[i]` puts the scaled index first instead, so the
            pair is still selected by an integer sum with the member-derived
            base offset. */
-        dst = (u8 *)*(u32 *)(
-            (u32)p + ((p->buffer_index & 1) << 2) +
-            (u32)&((FileTransferDescriptor *)0)->value_08
+        dst = (u8 *)(uintptr_t)(u32)*(u32 *)(uintptr_t)(
+            (uintptr_t)p + ((p->buffer_index & 1) << 2) +
+            (uintptr_t)&((FileTransferDescriptor *)0)->value_08
         );
         if ((D_8009B0F4 & 0x40000000) == 0) {
             CdGetSector(dst, FILE_SECTOR_SIZE / sizeof(u32));
@@ -163,7 +163,7 @@ void File_TransferReadyCallback(s32 arg)
         goto step;
     case 3:
         n = FILE_SECTOR_SIZE;
-        dst = (u8 *)p->value_08;
+        dst = (u8 *)(uintptr_t)(u32)p->value_08;
         if (p->phase_remaining < n) {
             n = p->phase_remaining;
         }
@@ -191,8 +191,8 @@ void File_TransferReadyCallback(s32 arg)
         }
     step:
         q->phase_size = 0;
-        if (q->phase_callback != 0) {
-            q->phase_callback(q, q->result++);
+        if (FILE_TRANSFER_PHASE_CALLBACK(q) != 0) {
+            FILE_TRANSFER_PHASE_CALLBACK(q)(q, q->result++);
         }
         q->phase_remaining = q->phase_size;
     counter:

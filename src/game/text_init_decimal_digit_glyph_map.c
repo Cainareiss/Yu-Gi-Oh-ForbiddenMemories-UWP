@@ -19,16 +19,26 @@ void Text_InitDecimalDigitGlyphMap(void) {
     u16 *out;
     u16 *q;
     const u32 *e;
+#ifdef MEMORIES_PC
+    uintptr_t p;
+    uintptr_t end;
+#else
     s32 p;
     s32 end;
+#endif
     s32 i;
     s32 n;
     s32 key;
 
     out = D_800EAFF8;
     i = 1;
+#ifdef MEMORIES_PC
+    p = (uintptr_t)buf.bytes;
+    end = p + 2 * TEXT_DECIMAL_RADIX;
+#else
     p = (s32)buf.bytes;
     end = (s32)buf.bytes + 2 * TEXT_DECIMAL_RADIX;
+#endif
     buf = D_80010330;
 
     do {

@@ -55,7 +55,7 @@ void func_800391E4(DuelEffectChannel *p) {
         e->field_40.h.field_42 = 0xE8;
         e->field_66 = 0xA;
         f = e->flags;
-        e->field_4C = (s32)func_80035E20;
+        DISPLAY_OBJECT_SET_4C(e, func_80035E20);
         e->field_67 = b;
         e->flags = f | DISPLAY_OBJECT_FLAG_SCREEN_SPACE;
         p->field_28 = e;

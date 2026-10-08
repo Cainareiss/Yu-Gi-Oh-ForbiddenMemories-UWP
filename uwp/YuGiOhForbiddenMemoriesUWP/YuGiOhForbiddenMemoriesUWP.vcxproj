@@ -61,6 +61,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <GenerateMapFile>true</GenerateMapFile>
       <AdditionalDependencies>d3d12.lib;dxgi.lib;xaudio2.lib;d3dcompiler.lib;WindowsApp.lib;legacy_stdio_definitions.lib;$(ProjectDir)..\..\build_x64\memories_core.lib;$(ProjectDir)..\..\build_x64\libmingwex_clean.a;$(ProjectDir)..\..\tmp\pc\tools\llvm-mingw\llvm-mingw-20260922-ucrt-x86_64\lib\clang\23\lib\windows\libclang_rt.builtins-x86_64.a;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalOptions>/IGNORE:4229 %(AdditionalOptions)</AdditionalOptions>
     </Link>
@@ -79,6 +80,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <GenerateMapFile>true</GenerateMapFile>
       <AdditionalDependencies>d3d12.lib;dxgi.lib;xaudio2.lib;d3dcompiler.lib;WindowsApp.lib;legacy_stdio_definitions.lib;$(ProjectDir)..\..\build_x64\memories_core.lib;$(ProjectDir)..\..\build_x64\libmingwex_clean.a;$(ProjectDir)..\..\tmp\pc\tools\llvm-mingw\llvm-mingw-20260922-ucrt-x86_64\lib\clang\23\lib\windows\libclang_rt.builtins-x86_64.a;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalOptions>/IGNORE:4229 %(AdditionalOptions)</AdditionalOptions>
     </Link>
@@ -91,6 +93,18 @@
     <Image Include="Assets\StoreLogo.png" />
     <Image Include="Assets\WideLogo.png" />
     <Image Include="Assets\logo_design.png" />
+    <Image Include="Assets\YuGiOhIcon44.png" />
+    <Image Include="Assets\YuGiOhIcon150.png" />
+    <Image Include="Assets\YuGiOhIcon310.png" />
+    <Image Include="Assets\YuGiOhStoreLogo.png" />
+    <Image Include="Assets\YuGiOhWideLogo.png" />
+    <Image Include="Assets\YuGiOhSplashScreen.png" />
+    <Media Include="Assets\YuGiOhMenuTheme.mp3" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="mods\**\*">
+      <DeploymentContent>true</DeploymentContent>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <AppxManifest Include="Package.appxmanifest">
@@ -117,6 +131,7 @@
     <ClInclude Include="D3D12Renderer.h" />
     <ClInclude Include="AudioXAudio2.h" />
     <ClInclude Include="GamepadUwp.h" />
+    <ClInclude Include="UwpPadMapping.h" />
     <ClInclude Include="StorageUwp.h" />
     <ClInclude Include="GameEngineBridge.h" />
     <ClInclude Include="ImGuiFrontend.h" />

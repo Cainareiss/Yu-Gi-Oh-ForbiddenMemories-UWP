@@ -13,7 +13,7 @@
 
 /* Caching this pointer shortens retail; each use must reload field_4C. */
 #define SPRITE_SHEET_HEADER(object) \
-    ((SpriteSheetHeader *)(object)->field_4C)
+    ((SpriteSheetHeader *)(uintptr_t)(u32)(object)->field_4C)
 #define GS_SPRITE_VIEW(sprite) ((GsSPRITE *)(sprite))
 #define DISPLAY_OBJECT_COLOR_BYTES(object) ((u8 *)&(object)->field_0C)
 
@@ -78,7 +78,10 @@ retry:
         work->cx += (SPRITE_SHEET_HEADER(object)->clut & 0xF) << 4;
         work->cy += SPRITE_SHEET_HEADER(object)->clut >> 4;
     }
-    sheet = (u8 *)object->field_4C;
+    /* field_4C is a guest address stored in the 32-bit display-object
+     * record.  Converting through u32 is required on x64: a direct cast from
+     * s32 sign-extends addresses in the 0x80000000 guest range. */
+    sheet = (u8 *)(uintptr_t)(u32)object->field_4C;
     sprite->rotate = object->field_20.h.field_22 * 5760;
     GS_SPRITE_VIEW(sprite)->scalex = object->field_44.h.field_44;
     GS_SPRITE_VIEW(sprite)->scaley = object->field_44.h.field_46;

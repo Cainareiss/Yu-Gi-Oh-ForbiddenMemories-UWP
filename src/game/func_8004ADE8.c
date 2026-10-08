@@ -60,6 +60,16 @@
 #include "sound_spatialization.h"
 #include "func_8004ADE8.h"
 
+/* Pointer members in the PS1 sound state are 32-bit guest addresses.  A
+   native x64 dereference of the four-byte transfer pointer would consume the
+   following field as its high half (the crash address 0x1620801EA870 was
+   exactly that malformed value). */
+static u8 *SD_SecondaryPointerAt(u32 offset)
+{
+    u8 * PSX_PTR32 stored = *(u8 * PSX_PTR32 *)(D_8009B458 + offset);
+    return PSX_PTR32_HOST(u8, stored);
+}
+
 void func_8004ADE8(arg0, arg1, velocity)
 s32 arg0;
 s32 arg1;
@@ -99,7 +109,7 @@ u8 velocity;
 
     channel = arg0;
     note = arg1;
-    hdr = *(u8 **)(D_8009B458 + 0x4A8);
+    hdr = SD_SecondaryPointerAt(0x4A8);
     rec = D_8009B458 + (channel & 0xFF) * SD_SEQUENCE_CHANNEL_RECORD_SIZE;
     program = rec[0];
     vab = hdr;
@@ -158,7 +168,7 @@ u8 velocity;
         i = 0;
         sum = 0;
         vag = *(s16 *)(tone + 0x16);
-        sizes = (u16 *)(*(u8 **)(D_8009B458 + 0x4A8)
+        sizes = (u16 *)(SD_SecondaryPointerAt(0x4A8)
                         + (*(u16 *)(hdr + 0x12)) * 512 + 0x820);
         obj = &D_8009B458[idx * SD_SECONDARY_OBJECT_SIZE + 0x180];
         if (vag > 0) {

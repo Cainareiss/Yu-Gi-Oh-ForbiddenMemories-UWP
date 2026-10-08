@@ -26,6 +26,12 @@
 #include "../../game/display_object_interpolation.h"
 #include "../../game/text_sjis_to_glyph_codes.h"
 
+#ifdef MEMORIES_UWP
+extern void UWP_LogMessage(const char *msg);
+#else
+#define UWP_LogMessage(msg) ((void)0)
+#endif
+
 /* The end of the name-entry screen pipeline: the confirmation dialog and
    completion polling, on the same D_8016D400 state block as the rest. They
    follow NameEntry_UpdateKeyboard, the binding-free matching C function in
@@ -142,10 +148,13 @@ void NameEntry_UpdateDialog(void)
     }
     flags = D_8016D400;
     if ((flags & 0x20) != 0) {
+        UWP_LogMessage("[NAME_ENTRY] confirmation dialog complete; starting fade out");
         SD_SEPlayFull(45);
         SD_BGMFadeOut();
         Fade_WaitOut();
+        UWP_LogMessage("[NAME_ENTRY] fade out complete");
         D_8016D400 = D_8016D400 | 0x10;
+        UWP_LogMessage("[NAME_ENTRY] completion flag set");
         return;
     }
     if ((flags & 0x80) != 0) {
@@ -205,9 +214,19 @@ ztest:
     D_8016D400 = fg & 0xBF;
     if (next != 0) {
         *next = term;
+#ifdef MEMORIES_UWP
+        /* The retail confirmation string (0x80F5) is built synchronously.
+           Its text stream can enter a wait state on the x64 UWP port before
+           it publishes field_30, leaving the game thread in that tight loop.
+           The confirmation has no choice or input path; proceed directly to
+           the existing fade/completion branch instead. */
+        D_8016D4D2 = 0;
+#else
         D_8016D4D2 = 0x80F5;
+#endif
         D_8016D41C = 0;
         D_8016D400 |= 0x20;
+        UWP_LogMessage("[NAME_ENTRY] FIM accepted; proceeding to new game");
         SD_SEPlayFull(48);
         return;
     }

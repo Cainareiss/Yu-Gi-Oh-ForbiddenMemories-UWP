@@ -99,7 +99,7 @@ void MainMenu_InitFrontendMenu(s32 unused, s32 menu)
     D_80184595 = 0;
     D_80184596 = 0;
     D_80184597 = 0;
-    if (gMain_bMenuID != 0) {
+    if (gMain_bMenuID != 0 && D_80184560 != 0) {
         state = D_80184560->flags;
         D_80184597 = 0x80;
         D_80184560->flags = state & ~DISPLAY_OBJECT_FLAG_RENDERABLE;

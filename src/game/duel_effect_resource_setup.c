@@ -146,7 +146,7 @@ shared_tail:
     entry->field_3A = (u8)(gDuel_abCardLevelAttr[card_id] & 0xF);
     entry->field_3C = 0;
 
-    object->field_4C = (s32)func_80028B08;
+    DISPLAY_OBJECT_SET_4C(object, func_80028B08);
     DisplayObject_SelectOrderingTable1(object);
 
     entry->object_04 = object;
@@ -167,7 +167,7 @@ shared_tail:
 
     ((DisplayObject *)entry->object_04)->field_65 = 3;
     object->field_65 = 3;
-    object->field_10 = (u32)CardPreview_UpdateVariant;
+    object->field_10 = (u32)DisplayObject_EncodeFunctionPointer((void *)CardPreview_UpdateVariant);
 
     {
         DisplayObject *secondary = entry->object_04;

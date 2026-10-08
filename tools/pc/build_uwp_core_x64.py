@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Build the entire game engine core as an x64 UWP static library: build_x64/memories_core.lib"""
 
-import os, sys, glob, struct, subprocess, hashlib, csv, concurrent.futures
+import os, sys, glob, struct, subprocess, hashlib, csv, concurrent.futures, shutil, json
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 os.chdir(ROOT)
@@ -17,6 +17,16 @@ OBJDUMP = os.path.join(TOOLCHAIN_BIN, "llvm-objdump.exe")
 BUILD_DIR = "build_x64"
 OBJ_DIR = os.path.join(BUILD_DIR, "obj")
 os.makedirs(OBJ_DIR, exist_ok=True)
+RAW_DIR = os.path.join(BUILD_DIR, "raw")
+os.makedirs(RAW_DIR, exist_ok=True)
+# Object rewriting below is destructive. Never feed yesterday's rewritten
+# symbols back into discovery, and invalidate compilation when headers change.
+HEADER_DIGEST = hashlib.sha256()
+for header in sorted(glob.glob("src/**/*.h", recursive=True)):
+    HEADER_DIGEST.update(header.encode())
+    with open(header, "rb") as handle:
+        HEADER_DIGEST.update(handle.read())
+HEADER_DIGEST = HEADER_DIGEST.hexdigest()
 
 ADDRESSES = "config/pc/guest_addresses.txt"
 
@@ -34,14 +44,14 @@ CFLAGS = [
     "-DMEMORIES_PC", "-DMEMORIES_UWP", "-D_LANGUAGE_C", "-DLANGUAGE_C", "-Isrc",
     "-Wno-incompatible-pointer-types", "-Wno-int-conversion", "-Wno-pointer-to-int-cast",
     "-mno-ms-bitfields", "-include", "src/pc/compat/pgxp_game.h",
-    "-mcmodel=large"
+    "-mcmodel=large", "-fms-extensions"
 ]
 
 NATIVE_CFLAGS = [
     "-std=gnu11", "-O2", "-g", "-w", "-fno-omit-frame-pointer", "-fno-strict-aliasing",
     "-DMEMORIES_PC", "-DMEMORIES_UWP", "-D_LANGUAGE_C", "-DLANGUAGE_C", "-Isrc",
     "-mno-ms-bitfields", "-DNO_FREETYPE", "-DNO_PNG",
-    "-mcmodel=large"
+    "-mcmodel=large", "-fms-extensions"
 ]
 
 NATIVE_CXXFLAGS = [
@@ -152,11 +162,22 @@ def obj_path(source):
 
 def compile_c(job):
     src, obj, flags = job
-    if os.path.exists(obj) and os.path.getmtime(obj) >= os.path.getmtime(src):
-        return
     compiler = CLANGXX if src.endswith(".cpp") else CLANG
-    cmd = [compiler, "-c", src, "-o", obj] + flags
-    run(cmd)
+    raw = os.path.join(RAW_DIR, os.path.basename(obj))
+    with open(src, "rb") as handle:
+        digest = hashlib.sha256(handle.read() + json.dumps(
+            [flags, HEADER_DIGEST, os.path.getmtime(compiler)]).encode()).hexdigest()
+    stamp = raw + ".sha256"
+    if os.path.exists(stamp):
+        with open(stamp, "rb") as handle:
+            cached = handle.read().decode("ascii", errors="ignore")
+    else:
+        cached = ""
+    if not os.path.exists(raw) or cached != digest:
+        run([compiler, "-c", src, "-o", raw] + flags)
+        with open(stamp, "w") as handle:
+            handle.write(digest)
+    shutil.copyfile(raw, obj)
 
 def main():
     print("=== Building Yu-Gi-Oh! Forbidden Memories Recompiled - UWP Core x64 ===")
@@ -268,7 +289,10 @@ def main():
     compile_jobs += [(s, obj_path(s), NATIVE_CXXFLAGS) for s in native_cpp]
 
     print(f"Compiling {len(compile_jobs)} units in parallel...")
-    with concurrent.futures.ThreadPoolExecutor(os.cpu_count() or 4) as pool:
+    # The LLVM UWP toolchain becomes unreliable when hundreds of clang
+    # processes are launched on high-core-count hosts. Keep a bounded queue;
+    # this is still parallel, but deterministic enough for repeated builds.
+    with concurrent.futures.ThreadPoolExecutor(min(os.cpu_count() or 4, 8)) as pool:
         results = list(pool.map(compile_c, compile_jobs))
     print("Compilation completed successfully!")
 
@@ -301,12 +325,14 @@ def main():
         sections[name] = [kind for kind in ("data", "bss") if f"ovl_{name}_{kind}" in headers_text]
 
     renames_file = "config/pc/host_symbol_renames.txt"
-    for source in game_sources:
+    def prepare_game(source):
         obj = obj_path(source)
         if os.path.exists(renames_file):
             run([OBJCOPY, f"--redefine-syms={renames_file}", obj])
         rename_coff_sections(obj, {".text": "game_text$m", ".rdata": "game_rodata$m",
                                    ".data": "game_data$m", ".bss": "game_bss$m"})
+    with concurrent.futures.ThreadPoolExecutor(min(os.cpu_count() or 4, 8)) as pool:
+        list(pool.map(prepare_game, game_sources))
 
     # 4. Resolve symbols and stubs
     native_objs = [obj_path(s) for s in native_c + native_cpp]
@@ -332,7 +358,12 @@ def main():
         for symbol, address in module_elf[name].items():
             addresses.setdefault(renamed.get(name, {}).get(symbol, symbol), address)
 
-    wanted = (undefined | tentative) - game_defined - native_defined - HOST_LIBC - FRONTEND_HOOKS
+    # These data tables are generated below in stubs.c.  They can legitimately
+    # be referenced by newly compiled game objects, so never turn them into
+    # fake function stubs during the undefined-symbol pass.
+    generated_data = {"Memories_FunctionMap", "Memories_FunctionMapCount",
+                      "Memories_Modules", "Memories_ModuleCount"}
+    wanted = (undefined | tentative) - game_defined - native_defined - HOST_LIBC - FRONTEND_HOOKS - generated_data
     wanted = {name for name in wanted if not name.startswith("UWP_")}
     pinned, stubs, unknown, aliases = {}, [], [], {}
     for name in sorted(wanted):
@@ -352,7 +383,8 @@ def main():
     for name in native_undefined - game_defined - native_defined:
         if name.startswith("D_8") and name in addresses:
             pinned[name] = addresses[name]
-    stubs += [name for name in unknown if name in undefined and name not in FRONTEND_HOOKS and not name.startswith("UWP_")]
+    stubs += [name for name in unknown if name in undefined and name not in FRONTEND_HOOKS and
+              name not in generated_data and not name.startswith("UWP_")]
 
     print(f"Symbols summary: {len(pinned)} pinned addresses, {len(stubs)} stubs, {len(aliases)} aliases")
 
@@ -368,10 +400,9 @@ def main():
         aliases_path = os.path.join(BUILD_DIR, "aliases.txt")
         with open(aliases_path, "w") as handle:
             handle.writelines(f"{name} {target}\n" for name, target in sorted(aliases.items()))
-        for source in game_sources:
-            obj = obj_path(source)
-            if set(run([NM, "-u", obj]).split()) & set(aliases):
-                run([OBJCOPY, f"--redefine-syms={aliases_path}", obj])
+        # objcopy ignores names absent from an object; no per-object nm needed.
+        with concurrent.futures.ThreadPoolExecutor(min(os.cpu_count() or 4, 8)) as pool:
+            list(pool.map(lambda source: run([OBJCOPY, f"--redefine-syms={aliases_path}", obj_path(source)]), game_sources))
 
     # 6. Generate section_markers.s
     section_markers_path = os.path.join(BUILD_DIR, "section_markers.s")

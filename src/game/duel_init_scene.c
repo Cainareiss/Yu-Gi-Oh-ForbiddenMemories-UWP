@@ -168,7 +168,7 @@ void Duel_InitScene(void)
     obj = DisplayObject_AcquireSlot(DisplayObject_FindFreeGeneralSlot(), 6);
     DisplayObject_SelectOrderingTable1(obj);
     DisplayObject_SetDepthOffset(obj, 1);
-    obj->field_4C = (s32)Duel_DrawLifePointsAndDeckCounts;
+    DISPLAY_OBJECT_SET_4C(obj, Duel_DrawLifePointsAndDeckCounts);
     prev = (u8 *)D_8009B21C;
     obj->field_50.word = (s32)prev;
     D_800E9DB0[3] = Duel_DrawFieldCards;
@@ -267,9 +267,9 @@ u8 *func_80017F04(DuelCardRecord *arg0, s32 arg1, s32 arg2)
     p->out_x = arg1;
     p->out_y = arg2;
     p->attribute |= DISPLAY_OBJECT_ATTRIBUTE_8BPP;
-    p->field_10 = DisplayObject_SetResourceVariantFromSign;
+    p->field_10 = (s32)DisplayObject_EncodeFunctionPointer((void *)DisplayObject_SetResourceVariantFromSign);
     DisplayObject_SelectOrderingTable1((DisplayObject *)p);
-    p->field_4C = Duel_DrawCardAtOutputPosition;
+    DISPLAY_OBJECT_SET_4C(p, Duel_DrawCardAtOutputPosition);
     func_80017E3C(p);
     func_80017DB4(p);
     return (u8 *)p;

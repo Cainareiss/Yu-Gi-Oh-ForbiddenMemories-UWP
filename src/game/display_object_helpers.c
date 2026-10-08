@@ -16,7 +16,11 @@
  * four texture coordinates from 0x1F800290. */
 #define SCRATCH_VERTEX(i) ((SVECTOR *)0x1F800300 + (i))
 #define GS_SPRITE_VIEW(sprite) ((GsSPRITE *)(sprite))
-#define GS_OT_VIEW(ordering_table) ((GsOT *)(ordering_table))
+/* DisplayObject_SubmitPacket keeps the retail ordering-table argument as a
+ * 32-bit guest word.  Casting that signed word directly to a host pointer
+ * sign-extends 0x800xxxxx into an unmapped address on x64. */
+#define GS_OT_VIEW(ordering_table) \
+    ((GsOT *)(uintptr_t)(u32)(ordering_table))
 #define POLY_G4_VIEW(packet) ((POLY_G4 *)(packet))
 #define POLY_GT4_VIEW(packet) ((POLY_GT4 *)(packet))
 #define POLY_FT4_VIEW(packet) ((POLY_FT4 *)(packet))
@@ -299,7 +303,7 @@ int DisplayObject_RunUpdateAndCheckRenderable(DisplayObject *object)
     /* Called as void (*)(void), with no argument, on purpose: the slot's
        declared type takes a u8 *, but the ambient argument register is what
        retail passes. See #2887. */
-    void (*callback)(void) = (void (*)(void))object->update;
+    void (*callback)(void) = (void (*)(void))DISPLAY_OBJECT_GET_UPDATE(object);
 
     if (callback != 0)
         callback();

@@ -40,11 +40,15 @@ void TextBox_BuildStep(DuelEffectChannel *object)
     u16 flags;
     s32 id;
     u8 *text;
-    u8 **slot;
+    TextStreamPointer *slot;
     u8 *script;
     DuelEffectEntry *entry;
     s32 op;
+#if defined(__x86_64__) || defined(_M_X64)
+    u32 *handlers;
+#else
     void (**handlers)(u8 *);
+#endif
 #ifdef MEMORIES_PC
     int pal_shift, pal_advance, pal_done;
 #endif
@@ -137,7 +141,11 @@ next_opcode:
     *slot = script + 1;
     if (op >= 0xF0) {
         D_8009B350 = 0;
+#if defined(__x86_64__) || defined(_M_X64)
+        ((void (*)(u8 *))(uintptr_t)handlers[(s16)D_8009B33A - 0xF0])((u8 *)object);
+#else
         handlers[(s16)D_8009B33A - 0xF0]((u8 *)object);
+#endif
         if (D_8009B350 >= 0) {
             if (D_8009B350 == 1) {
                 return;

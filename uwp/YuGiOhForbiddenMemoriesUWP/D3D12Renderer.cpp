@@ -24,7 +24,14 @@ struct VSOutput
 VSOutput VSMain(uint id : SV_VertexID)
 {
     VSOutput output;
-    float2 raw_uv = float2((id == 1 || id == 2) ? 1.0 : 0.0, (id >= 2) ? 1.0 : 0.0);
+    /* Use two explicit triangles instead of relying on a triangle-strip
+       winding after a SwapChainPanel resize. This keeps both halves of the
+       4:3 image covered on PC and Xbox. */
+    static const float2 positions[6] = {
+        float2(0.0, 0.0), float2(1.0, 0.0), float2(1.0, 1.0),
+        float2(0.0, 0.0), float2(1.0, 1.0), float2(0.0, 1.0)
+    };
+    float2 raw_uv = positions[id];
     float2 screen_pos = raw_uv * float2(2.0, -2.0) + float2(-1.0, 1.0);
     
     // Apply aspect ratio scale and centering
@@ -191,12 +198,16 @@ bool D3D12Renderer::CreateRtvViews()
         rtvHandle.ptr += rtvDescriptorSize;
     }
 
-    // SRV heap for game texture, ImGui font, and logo
-    D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
-    srvHeapDesc.NumDescriptors = 16;
-    srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-    srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-    if (FAILED(m_device->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&m_srvHeap)))) return false;
+    // SRV heap for game texture, ImGui font, and logo. Keep this heap across
+    // swap-chain resizes: ImGui and the logo retain descriptor handles into it.
+    if (!m_srvHeap)
+    {
+        D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
+        srvHeapDesc.NumDescriptors = 16;
+        srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+        srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+        if (FAILED(m_device->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&m_srvHeap)))) return false;
+    }
 
     return true;
 }
@@ -365,6 +376,9 @@ void D3D12Renderer::RenderFrame(const uint32_t* pixels, int width, int height, i
 {
     if (!m_initialized || !pixels || width <= 0 || height <= 0) return;
 
+    // There is one upload buffer and one game texture shared by all frames.
+    // Wait before CPU writes can overwrite a still-pending GPU copy.
+    WaitForGpu();
     if (!EnsureTexture(width, height)) return;
 
     // Upload pixel data to upload buffer
@@ -465,9 +479,9 @@ void D3D12Renderer::RenderFrame(const uint32_t* pixels, int width, int height, i
     float constants[4] = { scaleX, scaleY, 0.0f, 0.0f };
     m_commandList->SetGraphicsRoot32BitConstants(0, 4, constants, 0);
 
-    // Draw Quad: 4 vertices (Triangle Strip)
-    m_commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
-    m_commandList->DrawInstanced(4, 1, 0, 0);
+    // Draw Quad: two explicit triangles.
+    m_commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    m_commandList->DrawInstanced(6, 1, 0, 0);
 
     // Render in-game ImGui overlay if open
     if (ImGuiFrontend::Instance().IsInGameMenuOpen())
@@ -543,10 +557,13 @@ void D3D12Renderer::Resize(uint32_t width, uint32_t height)
 
     DXGI_SWAP_CHAIN_DESC desc = {};
     m_swapChain->GetDesc(&desc);
-    m_swapChain->ResizeBuffers(FrameCount, width, height, desc.BufferDesc.Format, desc.Flags);
+    if (FAILED(m_swapChain->ResizeBuffers(FrameCount, width, height, desc.BufferDesc.Format, desc.Flags)))
+    {
+        return;
+    }
 
     m_frameIndex = m_swapChain->GetCurrentBackBufferIndex();
-    CreateRtvViews();
+    if (!CreateRtvViews()) return;
     ImGuiFrontend::Instance().Resize(width, height);
 }
 

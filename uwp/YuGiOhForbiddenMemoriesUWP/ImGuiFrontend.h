@@ -7,6 +7,7 @@
 #include <functional>
 #include <memory>
 #include "StorageUwp.h"
+#include "FrontendGamepadInput.h"
 
 struct FrontendSettings
 {
@@ -39,7 +40,7 @@ public:
     void OnKeyDown(int virtualKey);
     void OnKeyUp(int virtualKey);
     void OnCharacter(wchar_t ch);
-    void UpdateGamepad(uint16_t padBits);
+    void UpdateGamepad(uint16_t padBits, bool connected, bool inGame);
 
     // Frame lifecycle
     void NewFrame();
@@ -64,6 +65,13 @@ public:
     bool IsInGameMenuOpen() const { return m_inGameMenuOpen; }
     void SetInGameMenuOpen(bool open) { m_inGameMenuOpen = open; }
     void ToggleInGameMenu() { m_inGameMenuOpen = !m_inGameMenuOpen; }
+    bool HandleBackNavigation()
+    {
+        if (m_showSettingsModal) { m_showSettingsModal = false; return true; }
+        if (m_showModsModal) { m_showModsModal = false; return true; }
+        if (m_inGameMenuOpen) { m_inGameMenuOpen = false; return true; }
+        return false;
+    }
 
 private:
     ImGuiFrontend();
@@ -98,6 +106,7 @@ private:
     FrontendSettings m_settings;
 
     // Gamepad state tracking
-    uint16_t m_prevPadBits = 0;
-    int m_selectedButtonIndex = 1; // 0: Select ROM, 1: Play, 2: Mods, 3: Settings
+    FrontendGamepadInput m_gamepadInput;
+    bool m_focusMainMenu = true;
+    bool m_focusInGameMenu = true;
 };

@@ -221,7 +221,7 @@ void func_80045514(void)
 
     case 72:
         if (g_SDValue->field_157A != 0) {
-            SDMusicPackage *list = (SDMusicPackage *)g_SDValue->music_track;
+            SDMusicPackage *list = PSX_PTR32_HOST(SDMusicPackage, g_SDValue->music_track);
 
             g_SDValue->field_157A = SD_VabOpenHead(
                 (SDVabHeader *)list->vab_header, 0, list->spu_address
@@ -250,7 +250,7 @@ void func_80045514(void)
             u32 i;
 
             entry_state = g_SDValue;
-            l = (CommandIndexTable *)entry_state->music_track;
+            l = PSX_PTR32_HOST(CommandIndexTable, entry_state->music_track);
             i = entry_state->field_004E & 0xF;
 
             if (i >= l->count) {

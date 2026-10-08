@@ -1,4 +1,8 @@
 #define _GNU_SOURCE
+#ifdef MEMORIES_UWP
+#define _WIN32_WINNT 0x0A00
+#define NTDDI_VERSION 0x0A000006
+#endif
 #include "pc/compat/fs.h"
 #include "image.h"
 #include "mips.h"
@@ -122,6 +126,30 @@ static void *guest_call_target(uint32_t address)
         /* A callback into a loaded overlay: run it interpreted. */
         Memories_MipsThunkTarget = address;
         return (void *)(uintptr_t)Memories_MipsThunk;
+    }
+    return NULL;
+}
+
+unsigned Memories_GuestAddressForHost(void (*host)(void))
+{
+    unsigned i;
+    for (i = 0; i < Memories_FunctionMapCount; i++) {
+        if (Memories_FunctionMap[i].host == host) {
+            return Memories_FunctionMap[i].guest;
+        }
+    }
+    return 0;
+}
+
+void *Memories_HostAddressForGuest(unsigned guest)
+{
+    unsigned i;
+    for (i = 0; i < Memories_FunctionMapCount; i++) {
+        if (Memories_FunctionMap[i].guest == guest &&
+            Memories_ModuleIsResident(Memories_FunctionMap[i].bank,
+                                     Memories_FunctionMap[i].identifier)) {
+            return (void *)(uintptr_t)Memories_FunctionMap[i].host;
+        }
     }
     return NULL;
 }
@@ -265,14 +293,13 @@ static LONG CALLBACK on_guest_exception(EXCEPTION_POINTERS *pointers)
     }
 #else
 #ifdef MEMORIES_UWP
-    if (record->ExceptionCode != 0x406D1388 && record->ExceptionCode != 0xE06D7363) {
-        char exc_buf[256];
-        snprintf(exc_buf, sizeof(exc_buf), "[EXC-GUEST] Code=0x%08lX at RIP=0x%llX, Info[1]=0x%llX",
-                 record->ExceptionCode, (unsigned long long)context->Rip,
-                 record->NumberParameters >= 2 ? (unsigned long long)record->ExceptionInformation[1] : 0ULL);
-        extern void UWP_LogMessage(const char *msg);
-        UWP_LogMessage(exc_buf);
-    }
+    /* UWP APIs can raise handled first-chance exceptions while probing fixed
+     * address-space mappings (for example E_INVALIDARG from VirtualAlloc2).
+     * Never format or write a log line from this vectored handler: the core
+     * uses the MinGW printf runtime while the frontend uses the MSVC CRT, and
+     * formatting during CRT/thread startup can recurse back into the handler.
+     * Only the access-violation path below is relevant to guest fixups; all
+     * other exceptions must be passed on untouched. */
 #endif
     if (record->ExceptionCode != EXCEPTION_ACCESS_VIOLATION || record->NumberParameters < 2) {
         return EXCEPTION_CONTINUE_SEARCH;
@@ -282,10 +309,12 @@ static LONG CALLBACK on_guest_exception(EXCEPTION_POINTERS *pointers)
         context->Rip = (DWORD64)(uintptr_t)target;
         return EXCEPTION_CONTINUE_EXECUTION;
     }
+#ifndef MEMORIES_UWP
     if (context->Rip == (DWORD64)address || address < 0x10000u ||
         (address >= MEMORIES_GUEST_RAM && address < MEMORIES_GUEST_RAM + 0x00800000u)) {
         report_guest_fault(address, (uint32_t)context->Rip);
     }
+#endif
 #endif
     return EXCEPTION_CONTINUE_SEARCH;
 }
@@ -301,22 +330,41 @@ static LONG CALLBACK on_guest_exception(EXCEPTION_POINTERS *pointers)
 static int view_at(HANDLE section, uint32_t address, size_t length, DWORD offset)
 {
     void *wanted = (void *)(uintptr_t)address;
-#if !defined(__x86_64__) && !defined(_M_X64)
+#if defined(MEMORIES_UWP) && defined(__x86_64__)
+    MEM_ADDRESS_REQUIREMENTS requirements = {wanted, (char *)wanted + length - 1, 0x10000};
+    MEM_EXTENDED_PARAMETER parameter = {0};
+    parameter.Type = MemExtendedParameterAddressRequirements;
+    parameter.Pointer = &requirements;
+    void *reserved = VirtualAlloc2FromApp(NULL, NULL, length,
+        MEM_RESERVE | MEM_RESERVE_PLACEHOLDER, PAGE_NOACCESS, &parameter, 1);
+    if (reserved == wanted) {
+        if (section && MapViewOfFile3FromApp(section, GetCurrentProcess(), wanted,
+                offset, length, MEM_REPLACE_PLACEHOLDER, PAGE_READWRITE, NULL, 0) == wanted) return 0;
+        VirtualFree(reserved, 0, MEM_RELEASE);
+    }
+    /* Independent allocations are not mirrors: KSEG0 and KSEG1 must refer
+     * to the same bytes. Do not silently fall back to disconnected RAM. */
+    return -1;
+#else
     if (section && MapViewOfFileEx(section, FILE_MAP_ALL_ACCESS, 0, offset, length, wanted) == wanted) {
         return 0;
     }
-#endif
     if (VirtualAlloc(wanted, length, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE) == wanted) {
         return 0;
     }
     fprintf(stderr, "cannot map guest memory at 0x%08x (error %lu)\n", (unsigned)address,
             GetLastError());
     return -1;
+#endif
 }
 
 int Memories_GuestMap(void)
 {
     int result;
+#ifdef MEMORIES_UWP
+    extern void UWP_LogMessage(const char *msg);
+    UWP_LogMessage("[GUESTMAP] begin");
+#endif
     AddVectoredExceptionHandler(1, on_guest_exception);
 #if !defined(__x86_64__) && !defined(_M_X64)
     HANDLE section = CreateFileMappingA(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0,
@@ -338,14 +386,49 @@ int Memories_GuestMap(void)
     result = view_at(section, MEMORIES_GUEST_RAM, MEMORIES_GUEST_RAM_SIZE, 0) ||
              view_at(section, 0xa0000000u, MEMORIES_GUEST_RAM_SIZE, 0);
 #else
-    result = view_at(NULL, MEMORIES_GUEST_RAM, MEMORIES_GUEST_RAM_SIZE, 0) ||
-             view_at(NULL, 0xa0000000u, MEMORIES_GUEST_RAM_SIZE, 0);
+    HANDLE section = CreateFileMappingFromApp(INVALID_HANDLE_VALUE, NULL,
+                                             PAGE_READWRITE, MEMORIES_GUEST_RAM_SIZE, NULL);
+#ifdef MEMORIES_UWP
+    UWP_LogMessage(section ? "[GUESTMAP] section created" : "[GUESTMAP] section creation failed");
 #endif
+    if (!section) return -1;
+    result = view_at(section, MEMORIES_GUEST_RAM, MEMORIES_GUEST_RAM_SIZE, 0) ||
+             view_at(section, 0xa0000000u, MEMORIES_GUEST_RAM_SIZE, 0);
+#ifdef MEMORIES_UWP
+    UWP_LogMessage(result ? "[GUESTMAP] high view failed" : "[GUESTMAP] high views mapped");
+#endif
+    CloseHandle(section);
+#endif
+#ifdef MEMORIES_UWP
+    if (result) {
+        extern void UWP_LogMessage(const char *msg);
+        UWP_LogMessage("[GUESTMAP] fixed guest RAM view mapping failed");
+    }
+#endif
+#if defined(MEMORIES_UWP)
+#ifdef MEMORIES_UWP
+    UWP_LogMessage("[GUESTMAP] mapping scratchpad");
+#endif
+    if (!result && VirtualAllocFromApp((void *)0x1f800000u, 0x1000, MEM_RESERVE | MEM_COMMIT,
+                                       PAGE_READWRITE) != (void *)0x1f800000u) {
+#else
     if (!result && VirtualAlloc((void *)0x1f800000u, 0x1000, MEM_RESERVE | MEM_COMMIT,
                                 PAGE_READWRITE) != (void *)0x1f800000u) {
+#endif
+#ifdef MEMORIES_UWP
+        /* Do not call the MinGW stdio formatter during UWP startup. */
+        extern void UWP_LogMessage(const char *msg);
+        UWP_LogMessage("[GUESTMAP] scratchpad mapping at 0x1f800000 failed");
+#else
         fprintf(stderr, "cannot map the scratchpad at 0x1f800000 (error %lu)\n", GetLastError());
+#endif
         result = -1;
     }
+#ifdef MEMORIES_UWP
+    else if (!result) {
+        UWP_LogMessage("[GUESTMAP] scratchpad mapped");
+    }
+#endif
 #if !defined(__x86_64__) && !defined(_M_X64)
     /* The views keep the section alive. */
     if (section != NULL) {

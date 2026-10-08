@@ -5,6 +5,7 @@
 #include <fstream>
 #include <string>
 #include <vector>
+#include <roapi.h>
 
 static std::string WideToUtf8(const std::wstring& wstr)
 {
@@ -111,16 +112,26 @@ GameEngineBridge& GameEngineBridge::Instance()
 
 bool GameEngineBridge::StartGame(D3D12Renderer* renderer, const std::wstring& romPath, const GameSettings& settings)
 {
+    std::lock_guard<std::mutex> lock(m_lifecycleMutex);
     if (m_running)
     {
-        StopGame();
+        UWP_LogMessage("[BRIDGE] Duplicate start ignored; existing game kept running");
+        return true;
     }
+    // A finished std::thread remains joinable; assigning another terminates
+    // the entire app, even though m_running has already become false.
+    StopGameLocked();
 
     m_renderer = renderer;
     m_romPath = romPath;
-    m_settings = settings;
+    SetSettings(settings);
     m_firstFramePresented = false;
-    m_lastError.clear();
+    SetLastError("");
+    {
+        std::lock_guard<std::mutex> lock(m_frameMutex);
+        m_frameReady = false;
+        m_pendingFrame.clear();
+    }
 
     std::wstring userDir = StorageUwp::GetLocalFolderPath();
 
@@ -134,6 +145,14 @@ bool GameEngineBridge::StartGame(D3D12Renderer* renderer, const std::wstring& ro
     SetEnvironmentVariableW(L"MEMORIES_HEADLESS", L"0");
     SetEnvironmentVariableW(L"MEMORIES_BACKEND", L"uwp");
     SetEnvironmentVariableW(L"MEMORIES_SCALE", std::to_wstring(settings.resolutionScale).c_str());
+    SetEnvironmentVariableW(L"MEMORIES_INTERNAL_SCALE", std::to_wstring(settings.resolutionScale).c_str());
+    SetEnvironmentVariableW(L"MEMORIES_ASPECT", settings.widescreen ? L"2" : L"0");
+    SetEnvironmentVariableW(L"MEMORIES_FILTER", settings.bilinearFilter ? L"1" : L"0");
+    SetEnvironmentVariableW(L"MEMORIES_HD_TEXT", settings.hdText ? L"1" : L"0");
+    SetEnvironmentVariableW(L"MEMORIES_MASTER_VOLUME", std::to_wstring(static_cast<int>(settings.masterVolume * 100.0f + 0.5f)).c_str());
+    SetEnvironmentVariableW(L"MEMORIES_MOD_3D_MONSTERS", settings.monsters3D ? L"1" : L"0");
+    SetEnvironmentVariableW(L"MEMORIES_MOD_AI_HARD_MODE", settings.aiHardMode ? L"1" : L"0");
+    SetEnvironmentVariableW(L"MEMORIES_MOD_DROP_MISSING_CARDS", settings.dropMissingCards ? L"1" : L"0");
 
     // Also set CRT environment variables via _wputenv so getenv() works!
     _wputenv((L"MEMORIES_DISC=" + romPath).c_str());
@@ -142,16 +161,40 @@ bool GameEngineBridge::StartGame(D3D12Renderer* renderer, const std::wstring& ro
     _wputenv(L"MEMORIES_HEADLESS=0");
     _wputenv(L"MEMORIES_BACKEND=uwp");
     _wputenv((L"MEMORIES_SCALE=" + std::to_wstring(settings.resolutionScale)).c_str());
+    _wputenv((L"MEMORIES_INTERNAL_SCALE=" + std::to_wstring(settings.resolutionScale)).c_str());
+    _wputenv((L"MEMORIES_ASPECT=" + std::to_wstring(settings.widescreen ? 2 : 0)).c_str());
+    _wputenv((L"MEMORIES_FILTER=" + std::to_wstring(settings.bilinearFilter ? 1 : 0)).c_str());
+    _wputenv((L"MEMORIES_HD_TEXT=" + std::to_wstring(settings.hdText ? 1 : 0)).c_str());
+    _wputenv((L"MEMORIES_MASTER_VOLUME=" + std::to_wstring(static_cast<int>(settings.masterVolume * 100.0f + 0.5f))).c_str());
+    _wputenv((L"MEMORIES_MOD_3D_MONSTERS=" + std::to_wstring(settings.monsters3D ? 1 : 0)).c_str());
+    _wputenv((L"MEMORIES_MOD_AI_HARD_MODE=" + std::to_wstring(settings.aiHardMode ? 1 : 0)).c_str());
+    _wputenv((L"MEMORIES_MOD_DROP_MISSING_CARDS=" + std::to_wstring(settings.dropMissingCards ? 1 : 0)).c_str());
 
     m_running = true;
     m_paused = false;
     m_resetRequested = false;
 
-    m_gameThread = std::thread(&GameEngineBridge::GameThreadEntryPoint, this);
+    try
+    {
+        m_gameThread = std::thread(&GameEngineBridge::GameThreadEntryPoint, this);
+    }
+    catch (const std::exception& ex)
+    {
+        m_running = false;
+        SetLastError(ex.what());
+        UWP_LogMessage("[BRIDGE] Failed to create game worker");
+        return false;
+    }
     return true;
 }
 
 void GameEngineBridge::StopGame()
+{
+    std::lock_guard<std::mutex> lock(m_lifecycleMutex);
+    StopGameLocked();
+}
+
+void GameEngineBridge::StopGameLocked()
 {
     m_running = false;
     if (m_gameThread.joinable())
@@ -182,6 +225,7 @@ void GameEngineBridge::RequestReset()
 
 void GameEngineBridge::SetSettings(const GameSettings& settings)
 {
+    std::lock_guard<std::mutex> lock(m_stateMutex);
     m_settings = settings;
 }
 
@@ -197,7 +241,8 @@ void GameEngineBridge::QuickLoad(int slot)
 
 void GameEngineBridge::OnPresent(const uint32_t* pixels, int width, int height, int stride)
 {
-    if (!m_running || !m_renderer) return;
+    if (!m_running || !pixels || width <= 0 || height <= 0 ||
+        width > 4096 || height > 4096 || stride < width) return;
 
     if (!m_firstFramePresented)
     {
@@ -210,23 +255,54 @@ void GameEngineBridge::OnPresent(const uint32_t* pixels, int width, int height, 
     while (m_paused && m_running)
     {
         std::this_thread::sleep_for(std::chrono::milliseconds(16));
-        GamepadUwp::Poll();
     }
 
-    m_renderer->RenderFrame(pixels, width, height, stride, m_settings.widescreen, m_settings.bilinearFilter);
+    if (!m_running) return;
+    // The menu may still be recording the command list when its Play callback
+    // starts this thread. Transfer pixels; keep all D3D12 work on the UI thread.
+    std::lock_guard<std::mutex> lock(m_frameMutex);
+    m_pendingFrame.resize(static_cast<size_t>(width) * height);
+    for (int y = 0; y < height; ++y)
+        memcpy(m_pendingFrame.data() + static_cast<size_t>(y) * width,
+               pixels + static_cast<size_t>(y) * stride, width * sizeof(uint32_t));
+    m_frameWidth = width;
+    m_frameHeight = height;
+    m_frameReady = true;
+}
+
+void GameEngineBridge::PresentPendingFrame()
+{
+    std::vector<uint32_t> pixels;
+    int width, height;
+    {
+        std::lock_guard<std::mutex> lock(m_frameMutex);
+        if (!m_frameReady || !m_renderer) return;
+        pixels.swap(m_pendingFrame);
+        width = m_frameWidth;
+        height = m_frameHeight;
+        m_frameReady = false;
+    }
+    const auto settings = GetSettings();
+    m_renderer->RenderFrame(pixels.data(), width, height, width,
+                            settings.widescreen, settings.bilinearFilter);
 }
 
 uint16_t GameEngineBridge::OnGetPadBits(int port)
 {
-    return GamepadUwp::GetPadBits(port);
+    return GamepadUwp::GetGamePadBits(port);
 }
 
 bool GameEngineBridge::OnStartAudio(MemoriesAudioMixCallback mixCallback)
 {
+    UWP_LogMessage("[AUDIO] OnStartAudio requested");
     if (m_audio)
     {
-        return m_audio->Initialize(mixCallback);
+        const bool started = m_audio->Initialize(mixCallback);
+        if (started) m_audio->SetVolume(GetSettings().masterVolume);
+        UWP_LogMessage(started ? "[AUDIO] OnStartAudio succeeded" : "[AUDIO] OnStartAudio failed");
+        return started;
     }
+    UWP_LogMessage("[AUDIO] audio backend unavailable");
     return false;
 }
 
@@ -266,10 +342,26 @@ extern "C" {
 
 void GameEngineBridge::GameThreadEntryPoint()
 {
+    const HRESULT apartment = RoInitialize(RO_INIT_MULTITHREADED);
     UWP_LogMessage("[BRIDGE] GameThreadEntryPoint started");
-    int res = Memories_UWP_Main();
+    int res = 1;
+    try
+    {
+        res = Memories_UWP_Main();
+    }
+    catch (Platform::Exception^ ex)
+    {
+        SetLastError(WideToUtf8(ex->Message->Data()));
+        UWP_LogMessage(GetLastError().c_str());
+    }
+    catch (const std::exception& ex)
+    {
+        SetLastError(ex.what());
+        UWP_LogMessage(ex.what());
+    }
     char buf[128];
     snprintf(buf, sizeof(buf), "[BRIDGE] Memories_UWP_Main finished with code: %d", res);
     UWP_LogMessage(buf);
+    if (SUCCEEDED(apartment)) RoUninitialize();
     m_running = false;
 }

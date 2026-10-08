@@ -6,6 +6,29 @@
 
 typedef void (*DisplayObjectCallback)(u8 *);
 
+#if defined(__x86_64__) || defined(_M_X64)
+/* DisplayObject lives in the PS1's 32-bit RAM.  Keep callbacks as guest
+ * addresses there so the vectored guest-call bridge can dispatch them. */
+u32 DisplayObject_EncodeCallback(DisplayObjectCallback callback);
+DisplayObjectCallback DisplayObject_DecodeCallback(u32 callback);
+u32 DisplayObject_EncodeFunctionPointer(void *callback);
+void *DisplayObject_DecodeFunctionPointer(u32 callback);
+
+#define DISPLAY_OBJECT_SET_UPDATE(object, callback) \
+    ((object)->update = DisplayObject_EncodeCallback((DisplayObjectCallback)(callback)))
+#define DISPLAY_OBJECT_GET_UPDATE(object) \
+    DisplayObject_DecodeCallback((object)->update)
+#define DISPLAY_OBJECT_SET_4C(object, callback) \
+    ((object)->field_4C = (s32)DisplayObject_EncodeFunctionPointer((void *)(callback)))
+#define DISPLAY_OBJECT_GET_4C(object, type) \
+    ((type)DisplayObject_DecodeFunctionPointer((u32)((object)->field_4C)))
+#else
+#define DISPLAY_OBJECT_SET_UPDATE(object, callback) ((object)->update = (callback))
+#define DISPLAY_OBJECT_GET_UPDATE(object) ((object)->update)
+#define DISPLAY_OBJECT_SET_4C(object, callback) ((object)->field_4C = (s32)(callback))
+#define DISPLAY_OBJECT_GET_4C(object, type) ((type)((object)->field_4C))
+#endif
+
 /* One entry of the DISPLAY_OBJECT_POOL_CAPACITY-entry pool at D_800EFE48.
  *
  * previous and next are pool indices, not pointers:

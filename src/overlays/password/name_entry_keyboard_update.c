@@ -118,12 +118,12 @@ tail47:
             parts: { (s8)D_8016D401, row * 15 }
         };
         col = coords.parts.column;
-        work = *(s8 *)((coords.parts.column + coords.parts.stride) + (s32)obj);
+        work = obj[coords.parts.column + coords.parts.stride];
         walkCol = col;
         while (work < 0) {
             walkCol = walkCol + work;
             D_8016D401 = walkCol;
-            work = *(s8 *)(((s8)walkCol + coords.parts.stride) + (s32)obj);
+            work = obj[(s8)walkCol + coords.parts.stride];
         }
     }
     D_8016D402 = D_8016D426;
@@ -198,8 +198,8 @@ join:
     node = TextBox_GetGlyphAt(kind, gx, gy);
     obj = NameEntry_SpawnGlyphSprite(kind, node);
     ((DisplayObject *)obj)->field_6C = 1;
-    ((DisplayObject *)obj)->update =
-        (DisplayObjectCallback)NameEntry_UpdateGlyphPulse;
+    DISPLAY_OBJECT_SET_UPDATE(((DisplayObject *)obj),
+        NameEntry_UpdateGlyphPulse);
     if (node == 0) {
         ((DisplayObject *)obj)->flags &= 0xFFBF;
     }
@@ -208,22 +208,22 @@ join:
         node = TextBox_GetGlyphAt(kind, gx + 20, gy);
         obj = NameEntry_SpawnGlyphSprite(kind, node);
         ((DisplayObject *)obj)->field_6C = 1;
-        ((DisplayObject *)obj)->update =
-            (DisplayObjectCallback)NameEntry_UpdateGlyphPulse;
+        DISPLAY_OBJECT_SET_UPDATE(((DisplayObject *)obj),
+            NameEntry_UpdateGlyphPulse);
         ((DisplayObject *)obj)->field_48.h.field_48 = 0;
     }
     if (kind == 1) {
         u16 *slot;
         D_8016D400 |= 0x80;
-        slot = (u16 *)(D_8016D42C * 2 + (s32)D_8016D418);
+        slot = (u16 *)(D_8016D418 + D_8016D42C * 2);
         *slot = 0;
         if (node != 0) {
             *slot = node->code_00;
         }
         obj = NameEntry_SpawnGlyphSprite(1, node);
         ((DisplayObject *)obj)->field_60 = 8;
-        ((DisplayObject *)obj)->update =
-            (DisplayObjectCallback)NameEntry_UpdateGlyphTransfer;
+        DISPLAY_OBJECT_SET_UPDATE(((DisplayObject *)obj),
+            NameEntry_UpdateGlyphTransfer);
         ((DisplayObject *)obj)->field_44.h.field_46 = 204;
         ((DisplayObject *)obj)->field_44.h.field_44 =
             D_8016D42C * 16 + 112;

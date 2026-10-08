@@ -51,7 +51,7 @@ void DisplayObject_RenderGouraudQuadList(void) {
     POLY_G4 *g;
     u8 *h;
     DisplayObject *e;
-    GsOT **tb;
+    GsOT * PSX_PTR32 *tb;
     DisplayObjectCallback fn;
     s32 eight;
     s32 hi;
@@ -81,7 +81,7 @@ void DisplayObject_RenderGouraudQuadList(void) {
 
         do {
             e = &D_800EFE48[i];
-            fn = e->update;
+            fn = DisplayObject_DecodeCallback(e->update);
             i = e->next;
             if (fn != (DisplayObjectCallback)0) {
                 fn(DISPLAY_OBJECT_BYTES(e));
@@ -164,7 +164,7 @@ void DisplayObject_RenderTexturedGouraudQuadList(void) {
     POLY_GT4 *g;
     u8 *h;
     DisplayObject *e;
-    GsOT **tb;
+    GsOT * PSX_PTR32 *tb;
     DisplayObjectCallback fn;
     s32 twelve;
     s32 hi;
@@ -194,7 +194,7 @@ void DisplayObject_RenderTexturedGouraudQuadList(void) {
 
         do {
             e = &D_800EFE48[i];
-            fn = e->update;
+            fn = DisplayObject_DecodeCallback(e->update);
             i = e->next;
             if (fn != (DisplayObjectCallback)0) {
                 fn(DISPLAY_OBJECT_BYTES(e));

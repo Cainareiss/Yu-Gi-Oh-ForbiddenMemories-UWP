@@ -27,8 +27,8 @@ s32 MainMenu_UpdateFrontendMenu(void)
     DisplayObject *ent3;
     DisplayObject *entry;
     DisplayObject *ent6;
-    u8 **slot;
-    u8 **slot2;
+    u8 * PSX_PTR32 *slot;
+    u8 * PSX_PTR32 *slot2;
     s32 step;
     s32 level;
     s16 timer;
@@ -288,14 +288,18 @@ s32 MainMenu_UpdateFrontendMenu(void)
         } else {
             count = 6;
         }
-        DisplayObject_SetResourceVariant((DisplayObjectConfig *)gMain_apMenuEntries[gMain_bMenuID], (gMain_bMenuID << 1) | 1);
+        if (gMain_apMenuEntries[gMain_bMenuID] != 0) {
+            DisplayObject_SetResourceVariant((DisplayObjectConfig *)gMain_apMenuEntries[gMain_bMenuID], (gMain_bMenuID << 1) | 1);
+        }
         /* Keep the store in each arm: the join controls high-half reuse. */
         if ((gInput_wPad1Repeat & PAD_DIRECTION_UP) != 0) {
             *(volatile u8 *)&gMain_bMenuID = (gMain_bMenuID - base + count - 1) % count + base;
         } else {
             *(volatile u8 *)&gMain_bMenuID = (gMain_bMenuID - base + count + 1) % count + base;
         }
-        DisplayObject_SetResourceVariant((DisplayObjectConfig *)gMain_apMenuEntries[gMain_bMenuID], gMain_bMenuID << 1);
+        if (gMain_apMenuEntries[gMain_bMenuID] != 0) {
+            DisplayObject_SetResourceVariant((DisplayObjectConfig *)gMain_apMenuEntries[gMain_bMenuID], gMain_bMenuID << 1);
+        }
         SD_SEPlay(6, 0xFF, 0);
         goto ret_m1;
     }

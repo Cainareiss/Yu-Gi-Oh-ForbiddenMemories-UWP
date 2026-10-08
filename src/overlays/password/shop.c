@@ -191,7 +191,7 @@ void Password_InitShopScreen(void)
     s32 i;
     DisplayObject *o;
     DuelEffectResourceRecord *cardCache;
-    DisplayObject **slot;
+    DisplayObject * PSX_PTR32 *slot;
     DisplayObjectCallback hook;
     u8 *p;
 
@@ -229,7 +229,7 @@ void Password_InitShopScreen(void)
     o->attribute |= (GsALON | GsAONE);
     DisplayObject_SelectOrderingTable1(o);
     DisplayObject_SetDepthOffset(o, 10);
-    o->update = (DisplayObjectCallback)Password_UpdateDigitCursor;
+    DISPLAY_OBJECT_SET_UPDATE(o, Password_UpdateDigitCursor);
     Password_SetDigitCursorTarget((u8 *)o);
     hook = Password_UpdateDigitCursorDecoration;
     slot = D_8016D440;
@@ -245,7 +245,7 @@ void Password_InitShopScreen(void)
         o->attribute |= GsALON;
         DisplayObject_SelectOrderingTable1(o);
         DisplayObject_SetDepthOffset(o, 8);
-        o->update = hook;
+        DISPLAY_OBJECT_SET_UPDATE(o, hook);
         o->flags |= DISPLAY_OBJECT_FLAG_TEXTURE_CELL_OFFSET |
                     DISPLAY_OBJECT_FLAG_SCREEN_SPACE;
         *slot = o;

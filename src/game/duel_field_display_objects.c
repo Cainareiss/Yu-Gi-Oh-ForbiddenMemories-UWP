@@ -214,7 +214,7 @@ void func_800234E4(DuelFieldDisplaySource *source)
     object->flags = object->flags |
                     DISPLAY_OBJECT_FLAG_TEXTURE_CELL_OFFSET |
                     DISPLAY_OBJECT_FLAG_SCREEN_SPACE;
-    object->update = (DisplayObjectCallback)func_80015D18;
+    DISPLAY_OBJECT_SET_UPDATE(object, func_80015D18);
     source->object = object;
 }
 
@@ -273,7 +273,7 @@ s32 func_800235C0(void)
                             DUEL_CARD_STAGING_REPLAY_BASE_OFFSET))->record.object;
                         o->field_6C = 1;
                         o->field_60 = 4;
-                        o->update = (DisplayObjectCallback)func_800229F4;
+                        DISPLAY_OBJECT_SET_UPDATE(o, func_800229F4);
                     }
                 }
                 D_8009B162 |= 0x4000;
@@ -411,7 +411,7 @@ s32 func_800235C0(void)
                                 DUEL_CARD_STAGING_REPLAY_BASE_OFFSET))->record.object;
                             o->field_6C = 1;
                             o->field_60 = 4;
-                            o->update = (DisplayObjectCallback)func_80022674;
+                            DISPLAY_OBJECT_SET_UPDATE(o, func_80022674);
                         }
                     }
                     D_8009B162 |= 0x4000;

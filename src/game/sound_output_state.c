@@ -46,9 +46,9 @@ s32 func_80045054(void)
 
     choice_state->decoded_half = select;
     if (select == SPU_DECODED_FIRSTHALF) {
-        values = (s16 *)choice_state->buffer_ptrs_153C[0];
+        values = PSX_PTR32_HOST(s16, choice_state->buffer_ptrs_153C[0]);
     } else {
-        values = (s16 *)choice_state->buffer_ptrs_153C[1];
+        values = PSX_PTR32_HOST(s16, choice_state->buffer_ptrs_153C[1]);
     }
     loaded = g_SDValue_output_level;
     i = 0;

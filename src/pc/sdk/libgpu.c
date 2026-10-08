@@ -512,14 +512,35 @@ int ClearImage(RECT *rect, u8 r, u8 g, u8 b)
 int LoadImage(RECT *rect, u32 *pixels)
 {
     flush_drawing();
+#if defined(MEMORIES_UWP) && defined(__x86_64__)
+    /* LoadImage's source is PS1 RAM.  Some original call sites form it from
+     * a signed 32-bit word, which becomes 0xffffffff80000000.. on x64.
+     * Rebuild the guest pointer as an unsigned address before dereferencing. */
+    {
+        uintptr_t source = (uintptr_t)pixels;
+        if ((source >> 32) == 0xffffffffu || (source >> 32) >= 0x80000000u || (source >> 47) != 0) source = (u32)source;
+        SoftGpu_Load(rect->x, rect->y, rect->w, rect->h,
+                     (const uint16_t *)source);
+    }
+#else
     SoftGpu_Load(rect->x, rect->y, rect->w, rect->h, (const uint16_t *)pixels);
+#endif
     return 0;
 }
 
 int StoreImage(RECT *rect, u32 *pixels)
 {
     flush_drawing();
+#if defined(MEMORIES_UWP) && defined(__x86_64__)
+    {
+        uintptr_t destination = (uintptr_t)pixels;
+        if ((destination >> 32) == 0xffffffffu || (destination >> 32) >= 0x80000000u || (destination >> 47) != 0) destination = (u32)destination;
+        SoftGpu_Store(rect->x, rect->y, rect->w, rect->h,
+                      (uint16_t *)destination);
+    }
+#else
     SoftGpu_Store(rect->x, rect->y, rect->w, rect->h, (uint16_t *)pixels);
+#endif
     return 0;
 }
 
@@ -536,7 +557,10 @@ void Memories_PictureCapture(int sx, int sy, int dx, int dy, int w, int h)
     SoftGpu_Capture(sx, sy, dx, dy, w, h);
 }
 
-int LoadImage2(RECT *rect, u32 *pixels) { return LoadImage(rect, pixels); }
+int LoadImage2(RECT *rect, u32 *pixels)
+{
+    return LoadImage(rect, pixels);
+}
 int StoreImage2(RECT *rect, u32 *pixels) { return StoreImage(rect, pixels); }
 int MoveImage2(RECT *rect, int x, int y) { return MoveImage(rect, x, y); }
 

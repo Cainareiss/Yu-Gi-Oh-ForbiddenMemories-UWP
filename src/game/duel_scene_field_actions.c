@@ -226,7 +226,7 @@ void DuelScene_UpdateFieldActions(void)
                         goto back_to_menu;
                     }
                     o = card->object;
-                    W(o, 0x24) = (s32)func_8001D240;
+                    DISPLAY_OBJECT_SET_UPDATE((DisplayObject *)o, func_8001D240);
                     B(o, 0x6C) = 0xF;
                     return;
                 }
@@ -247,7 +247,7 @@ void DuelScene_UpdateFieldActions(void)
                 if (card->flags & 0x800) {
                     D_8009B20C[0] = flags | 0xC000;
                     o = card->object;
-                    W(o, 0x24) = (s32)func_8001D240;
+                    DISPLAY_OBJECT_SET_UPDATE((DisplayObject *)o, func_8001D240);
                     B(o, 0x6C) = 0xF;
                 }
                 return;
@@ -298,7 +298,7 @@ void DuelScene_UpdateFieldActions(void)
             card = &D_801A7AD8[D_800907D8[r * 5 + side->col + D_8009B1D5 * 20]];
             if (r == 2 && DuelCard_CanActThisTurn(card) != 0) {
                 o = card->object;
-                W(o, 0x24) = (s32)func_8001D240;
+                DISPLAY_OBJECT_SET_UPDATE((DisplayObject *)o, func_8001D240);
                 B(o, 0x6C) = 0xF;
                 SD_SEPlayFull(0xB);
             }
@@ -525,7 +525,7 @@ void DuelScene_UpdateFieldActions(void)
                 H(o, 8) |= 4;
             }
             S(o, 0x60) = 0xC;
-            W(o, 0x24) = (s32)func_8001D3C4;
+            DISPLAY_OBJECT_SET_UPDATE((DisplayObject *)o, func_8001D3C4);
             S(o, 0x28) = 0x86;
             S(o, 0x2A) = 0x5A;
             S(o, 0x2C) = 0;
@@ -541,7 +541,7 @@ void DuelScene_UpdateFieldActions(void)
                         o = card->object;
                         B(o, 0x6C) = 1;
                         S(o, 0x60) = 8;
-                        W(o, 0x24) = (s32)func_8001D344;
+                        DISPLAY_OBJECT_SET_UPDATE((DisplayObject *)o, func_8001D344);
                         a = 0x20;
                         if (card->flags & 0x4000) {
                             a = 0x10;
@@ -609,7 +609,7 @@ void DuelScene_UpdateFieldActions(void)
             o = (u8 *)D_8009B1CC;
             S(o, 0x60) = 0xC;
             pw = D_8015C424;
-            W(o, 0x24) = (s32)func_8001D3C4;
+            DISPLAY_OBJECT_SET_UPDATE((DisplayObject *)o, func_8001D3C4);
             H(o, 0x28) = BANK(B(o, 0x6A), 0x36BC);
             H(o, 0x2A) = BANK(B(o, 0x6A), 0x36BE);
             S(o, 0x2C) = 0;
@@ -628,7 +628,7 @@ void DuelScene_UpdateFieldActions(void)
                 o = card->object;
                 B(o, 0x6C) = 1;
                 S(o, 0x60) = 8;
-                W(o, 0x24) = (s32)func_8001D344;
+                DISPLAY_OBJECT_SET_UPDATE((DisplayObject *)o, func_8001D344);
                 a = 0x80;
                 if (card->flags & 0x4000) {
                     a = 0x40;
