@@ -27,6 +27,11 @@
 #include "pc/text/text.h"
 #endif
 
+#ifdef MEMORIES_UWP
+#include <stdio.h>
+extern void UWP_LogMessage(const char *msg);
+#endif
+
 /* Defined rather than declared: the assembler only resolves a small global
    gp-relative when the translation unit defines it, and that is what makes the
    opcode store below a single %gp_rel instruction whose load-delay slot needs
@@ -90,6 +95,13 @@ void TextBox_BuildStep(DuelEffectChannel *object)
                                  Text_Resolve((u16)object->field_36, text));
         text = (u8 *)Duelists_Text((u16)object->field_36, text);
 #endif
+#ifdef MEMORIES_UWP
+        {
+            char buf[128];
+            snprintf(buf, sizeof(buf), "[BUILD_STEP] Init: id=0x%04X, text=%p", (unsigned)id, (void *)text);
+            UWP_LogMessage(buf);
+        }
+#endif
         object->text_00 = text;
         object->field_56 = 0;
         object->state_51 = 0;
@@ -139,9 +151,31 @@ next_opcode:
     D_8009B33A = script[0];
     op = (s16)D_8009B33A;
     *slot = script + 1;
+#ifdef MEMORIES_UWP
+    {
+        static int op_logged = 0;
+        if (op_logged++ < 30) {
+            char buf[128];
+            snprintf(buf, sizeof(buf), "[BUILD_STEP] op=0x%02X, script=%p, stream=%d, letter_cnt=%d",
+                     (unsigned)op, (void *)script, (int)object->stream_58, (int)object->field_60);
+            UWP_LogMessage(buf);
+        }
+    }
+#endif
     if (op >= 0xF0) {
         D_8009B350 = 0;
 #if defined(__x86_64__) || defined(_M_X64)
+#ifdef MEMORIES_UWP
+        {
+            static int f_logged = 0;
+            if (f_logged++ < 15) {
+                char buf[128];
+                snprintf(buf, sizeof(buf), "[BUILD_STEP] Call handler %d (guest fn=0x%08X)",
+                         (int)(op - 0xF0), (unsigned)handlers[op - 0xF0]);
+                UWP_LogMessage(buf);
+            }
+        }
+#endif
         ((void (*)(u8 *))(uintptr_t)handlers[(s16)D_8009B33A - 0xF0])((u8 *)object);
 #else
         handlers[(s16)D_8009B33A - 0xF0]((u8 *)object);
@@ -169,6 +203,17 @@ next_opcode:
         return;
     }
     D_8009B35A = D_8009B33A;
+#ifdef MEMORIES_UWP
+    {
+        static int g_logged = 0;
+        if (g_logged++ < 20) {
+            char buf[128];
+            snprintf(buf, sizeof(buf), "[BUILD_STEP] Emit glyph 0x%04X, x=%d, y=%d, letter_idx=%d",
+                     (unsigned)D_8009B33A, (int)object->field_38, (int)object->field_3A, (int)object->field_60);
+            UWP_LogMessage(buf);
+        }
+    }
+#endif
 #ifdef MEMORIES_PC
     /* Game > Language's European text is spaced as the PAL font is: a few
        letters narrower, drawn a little left in their cell (language.h). It

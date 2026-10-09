@@ -9,7 +9,7 @@
    view because folding it into the record base costs a register and four
    instructions. */
 typedef struct {
-    void *obj;
+    void * PSX_PTR32 obj;
     u16 flags;
 } ChoiceView;
 
@@ -18,6 +18,12 @@ typedef struct {
     ChoiceView choice;
     u8 pad_08[sizeof(DuelEffectChannel) - sizeof(ChoiceView)];
 } ChoiceChannelCursor;
+
+#if defined(__x86_64__) || defined(_M_X64)
+_Static_assert(sizeof(ChoiceView) == 8, "ChoiceView size mismatch");
+_Static_assert(offsetof(ChoiceView, flags) == 4, "ChoiceView flags offset mismatch");
+_Static_assert(sizeof(ChoiceChannelCursor) == sizeof(DuelEffectChannel), "ChoiceChannelCursor size mismatch");
+#endif
 
 /* One entry of the halfword pair table at D_801D9000. text_constants.h
  * declares the table as u32; func_80039794 takes that declaration and walks

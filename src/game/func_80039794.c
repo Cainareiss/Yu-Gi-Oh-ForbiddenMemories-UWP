@@ -16,6 +16,11 @@
 #include "pc/text/glyphs.h"
 #endif
 
+#ifdef MEMORIES_UWP
+#include <stdio.h>
+extern void UWP_LogMessage(const char *msg);
+#endif
+
 /* The retail body walks two pointers over the same four records: the record
  * base it hands to the per-record calls, and a second cursor parked on the
  * record's 0x30 pair, so the choice object and its flags are reached at
@@ -39,6 +44,17 @@ void func_80039794(void)
     reset_value = -1;
     table = (TblEnt *)D_801D9000;
     q = (ChoiceChannelCursor *)&p->field_30;
+#ifdef MEMORIES_UWP
+    {
+        static int f_entry_logged = 0;
+        if (f_entry_logged++ < 5) {
+            char buf[128];
+            snprintf(buf, sizeof(buf), "[FUNC_80039794] entry: p=%p, q_flags=0x%04X, p_flags_34=0x%04X",
+                     (void *)p, (unsigned)q->choice.flags, (unsigned)p->flags_34);
+            UWP_LogMessage(buf);
+        }
+    }
+#endif
     do {
         if (q->choice.flags & 0x8000) {
             D_8009B35A = 0;

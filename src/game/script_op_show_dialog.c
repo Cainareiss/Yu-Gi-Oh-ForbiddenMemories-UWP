@@ -14,6 +14,11 @@
    so no storage is allocated here. */
 u16 D_8009B28C;
 
+#ifdef MEMORIES_UWP
+#include <stdio.h>
+extern void UWP_LogMessage(const char *msg);
+#endif
+
 void Script_OpShowDialog(void)
 {
     u8 *script;
@@ -31,6 +36,14 @@ void Script_OpShowDialog(void)
         box = TextBox_Create(0, value & 0xFFF, 0x10, 0xB0, 0x120, 0x30);
         DuelEffect_MarkObjectIfActive((MenuRecord *)box);
         box->flags_34 |= 8;
+#ifdef MEMORIES_UWP
+        {
+            char buf[128];
+            snprintf(buf, sizeof(buf), "[SHOW_DIALOG] Created dialog: value=0x%04X, id=0x%04X, box=%p, flags_34=0x%04X",
+                     (unsigned)value, (unsigned)(value & 0xFFF), (void *)box, (unsigned)box->flags_34);
+            UWP_LogMessage(buf);
+        }
+#endif
         if ((value & 0x8000) != 0) {
             flags = D_8009B27C;
             boxflags = *(volatile u16 *)&box->flags_34;
@@ -41,6 +54,9 @@ void Script_OpShowDialog(void)
     } else {
         if ((D_8009B2A4 & 0x4000) == 0) {
             if ((D_8009B27C & 0x4000) == 0) {
+#ifdef MEMORIES_UWP
+                UWP_LogMessage("[SHOW_DIALOG] Destroying dialog box");
+#endif
                 TextBox_Destroy(D_800EB0F8);
             }
             D_8009B28C = 0;
