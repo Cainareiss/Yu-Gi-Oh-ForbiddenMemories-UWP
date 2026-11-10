@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+ <ItemGroup Label="ProjectConfigurations"><ProjectConfiguration Include="Release|x64"><Configuration>Release</Configuration><Platform>x64</Platform></ProjectConfiguration></ItemGroup>
+ <PropertyGroup Label="Globals"><ProjectGuid>{1C18BE52-FA81-4A08-8458-0F668241286C}</ProjectGuid><WindowsTargetPlatformVersion>10.0.26100.0</WindowsTargetPlatformVersion></PropertyGroup>
+ <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+ <PropertyGroup Label="Configuration"><ConfigurationType>Application</ConfigurationType><UseDebugLibraries>false</UseDebugLibraries><PlatformToolset>v143</PlatformToolset><CharacterSet>Unicode</CharacterSet></PropertyGroup>
+ <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+ <PropertyGroup><OutDir>$(ProjectDir)..\..\tmp\uwp-native\msvc\</OutDir><IntDir>$(OutDir)obj\</IntDir><TargetName>memories-uwp-headless-msvc</TargetName></PropertyGroup>
+ <ItemDefinitionGroup>
+  <ClCompile><AdditionalIncludeDirectories>$(ProjectDir)..\..\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories><CompileAs>CompileAsC</CompileAs><RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary><PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions></ClCompile>
+  <Link><SubSystem>Console</SubSystem><GenerateDebugInformation>true</GenerateDebugInformation><RandomizedBaseAddress>false</RandomizedBaseAddress><HighEntropyVA>false</HighEntropyVA><BaseAddress>0x40000000</BaseAddress><AdditionalDependencies>legacy_stdio_definitions.lib;%(AdditionalDependencies)</AdditionalDependencies><AdditionalOptions>/dynamicbase:no /highentropyva:no $(NativeConsoleLinkOptions) %(AdditionalOptions)</AdditionalOptions></Link>
+ </ItemDefinitionGroup>
+ <Import Project="$(ProjectDir)..\..\tmp\uwp-native\native-link.props" />
+ <ItemGroup><ClCompile Include="headless_host.c" /></ItemGroup>
+ <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+</Project>

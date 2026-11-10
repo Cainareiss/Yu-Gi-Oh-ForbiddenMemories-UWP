@@ -1,0 +1,18 @@
+<Application
+    x:Class="YuGiOhForbiddenMemoriesUWP.App"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    RequestedTheme="Dark">
+    <Application.Resources>
+        <!-- Modern Dark Gold Theme for Yu-Gi-Oh Forbidden Memories -->
+        <SolidColorBrush x:Key="MillenniumGold" Color="#FFD452" />
+        <SolidColorBrush x:Key="MillenniumDarkGold" Color="#B8860B" />
+        <SolidColorBrush x:Key="CardBackBlue" Color="#162238" />
+        <SolidColorBrush x:Key="SurfaceDark" Color="#12131A" />
+        <SolidColorBrush x:Key="CardSurfaceDark" Color="#1E202B" />
+        <SolidColorBrush x:Key="BorderGold" Color="#554422" />
+        <SolidColorBrush x:Key="TextLight" Color="#F0F0F5" />
+        <SolidColorBrush x:Key="TextMuted" Color="#9A9EAB" />
+    </Application.Resources>
+</Application>
+

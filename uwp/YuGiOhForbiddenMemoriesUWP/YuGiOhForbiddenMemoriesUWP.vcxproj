@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{B6A56BC5-78E2-4C78-9B7E-7B93F3C88D41}</ProjectGuid>
+    <Keyword>DirectXApp</Keyword>
+    <RootNamespace>YuGiOhForbiddenMemoriesUWP</RootNamespace>
+    <DefaultLanguage>en-US</DefaultLanguage>
+    <MinimumVisualStudioVersion>14.0</MinimumVisualStudioVersion>
+    <AppContainerApplication>true</AppContainerApplication>
+    <ApplicationType>Windows Store</ApplicationType>
+    <WindowsTargetPlatformVersion>10.0.26100.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformMinVersion>10.0.17763.0</WindowsTargetPlatformMinVersion>
+    <ApplicationTypeRevision>10.0</ApplicationTypeRevision>
+    <!-- XAML's normal CreateWinMD pass invokes link.exe with /WINMD:ONLY.
+         The final PE is linked by lld-link, so generate the metadata with the
+         MSVC linker in the custom target below and skip that extra pass. -->
+    <GenerateBuildCompilePassWinMD>false</GenerateBuildCompilePassWinMD>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <!-- The native core is linked with LLVM lld-link.  MSVC /GL emits
+         C++/CX linker IR that lld-link cannot consume, so keep host objects
+         as regular COFF while retaining /O2. -->
+    <WholeProgramOptimization>false</WholeProgramOptimization>
+    <PlatformToolset>v143</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <PackageCertificateThumbprint>F0388DE04F21628A1DD3AE3407301785790210B4</PackageCertificateThumbprint>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <CompileAsWinRT>true</CompileAsWinRT>
+      <SDLCheck>true</SDLCheck>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)..\..\src;$(ProjectDir)..\..\src\pc;$(ProjectDir)..\imgui;$(ProjectDir)..\imgui\backends;$(GeneratedFilesDir);$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_DEBUG;MEMORIES_PC;MEMORIES_UWP;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <DisableSpecificWarnings>4453;28204</DisableSpecificWarnings>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <GenerateMapFile>true</GenerateMapFile>
+      <!-- XAML metadata is generated separately with the MSVC linker. -->
+      <GenerateWindowsMetadata>false</GenerateWindowsMetadata>
+      <AdditionalDependencies>d3d12.lib;dxgi.lib;xaudio2.lib;d3dcompiler.lib;WindowsApp.lib;windowscodecs.lib;legacy_stdio_definitions.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalOptions>/IGNORE:4229 /BASE:0x40000000 /HIGHENTROPYVA:NO %(AdditionalOptions)</AdditionalOptions>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <CompileAsWinRT>true</CompileAsWinRT>
+      <SDLCheck>true</SDLCheck>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(ProjectDir)..\..\src;$(ProjectDir)..\..\src\pc;$(ProjectDir)..\imgui;$(ProjectDir)..\imgui\backends;$(GeneratedFilesDir);$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>NDEBUG;MEMORIES_PC;MEMORIES_UWP;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <Optimization>MaxSpeed</Optimization>
+      <DisableSpecificWarnings>4453;28204</DisableSpecificWarnings>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <GenerateMapFile>true</GenerateMapFile>
+      <AdditionalDependencies>d3d12.lib;dxgi.lib;xaudio2.lib;d3dcompiler.lib;WindowsApp.lib;windowscodecs.lib;legacy_stdio_definitions.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalOptions>/IGNORE:4229 /BASE:0x40000000 /HIGHENTROPYVA:NO %(AdditionalOptions)</AdditionalOptions>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <Image Include="Assets\SplashScreen.png" />
+    <Image Include="Assets\Square150x150Logo.png" />
+    <Image Include="Assets\Square310x310Logo.png" />
+    <Image Include="Assets\Square44x44Logo.png" />
+    <Image Include="Assets\StoreLogo.png" />
+    <Image Include="Assets\WideLogo.png" />
+    <Image Include="Assets\logo_design.png" />
+    <Image Include="Assets\YuGiOhIcon44.png" />
+    <Image Include="Assets\YuGiOhIcon150.png" />
+    <Image Include="Assets\YuGiOhIcon310.png" />
+    <Image Include="Assets\YuGiOhStoreLogo.png" />
+    <Image Include="Assets\YuGiOhWideLogo.png" />
+    <Image Include="Assets\YuGiOhSplashScreen.png" />
+    <Media Include="Assets\YuGiOhMenuTheme.mp3" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="$(ProjectDir)..\..\tmp\uwp-native\mods\**\*">
+      <DeploymentContent>true</DeploymentContent>
+      <Link>mods\%(RecursiveDir)%(Filename)%(Extension)</Link>
+    </None>
+    <None Include="$(ProjectDir)..\..\tmp\uwp-native\languages\*.txt">
+      <DeploymentContent>true</DeploymentContent>
+      <Link>languages\%(Filename)%(Extension)</Link>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <AppxManifest Include="Package.appxmanifest">
+      <SubType>Designer</SubType>
+    </AppxManifest>
+  </ItemGroup>
+  <ItemGroup>
+    <ApplicationDefinition Include="App.xaml">
+      <SubType>Designer</SubType>
+    </ApplicationDefinition>
+    <Page Include="MainPage.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="pch.h" />
+    <ClInclude Include="App.xaml.h">
+      <DependentUpon>App.xaml</DependentUpon>
+    </ClInclude>
+    <ClInclude Include="MainPage.xaml.h">
+      <DependentUpon>MainPage.xaml</DependentUpon>
+    </ClInclude>
+    <ClInclude Include="D3D12Renderer.h" />
+    <ClInclude Include="AudioXAudio2.h" />
+    <ClInclude Include="GamepadUwp.h" />
+    <ClInclude Include="UwpPadMapping.h" />
+    <ClInclude Include="StorageUwp.h" />
+    <ClInclude Include="GameEngineBridge.h" />
+    <ClInclude Include="ImGuiFrontend.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="App.xaml.cpp">
+      <DependentUpon>App.xaml</DependentUpon>
+    </ClCompile>
+    <ClCompile Include="MainPage.xaml.cpp">
+      <DependentUpon>MainPage.xaml</DependentUpon>
+    </ClCompile>
+    <ClCompile Include="D3D12Renderer.cpp" />
+    <ClCompile Include="AudioXAudio2.cpp" />
+    <ClCompile Include="GamepadUwp.cpp" />
+    <ClCompile Include="StorageUwp.cpp" />
+    <ClCompile Include="GameEngineBridge.cpp" />
+    <ClCompile Include="ImGuiFrontend.cpp" />
+    <ClCompile Include="NativeCrt.cpp">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="..\imgui\imgui.cpp">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="..\imgui\imgui_draw.cpp">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="..\imgui\imgui_tables.cpp">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="..\imgui\imgui_widgets.cpp">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+    <ClCompile Include="..\imgui\backends\imgui_impl_dx12.cpp">
+      <CompileAsWinRT>false</CompileAsWinRT>
+    </ClCompile>
+  </ItemGroup>
+  <Import Project="$(ProjectDir)..\..\tmp\uwp-native\native-link.props" Condition="Exists('$(ProjectDir)..\..\tmp\uwp-native\native-link.props')" />
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <Target Name="GenerateWinMDWithMsvc"
+          BeforeTargets="MarkupCompilePass2"
+          Condition="'$(GenerateBuildCompilePassWinMD)' == 'false'">
+    <Exec Command="powershell.exe -NoProfile -ExecutionPolicy Bypass -Command &quot;&amp; { &amp; '$(ProjectDir)..\..\tools\uwp\generate_winmd.ps1' -LinkTool '$(VCToolsInstallDir)bin\HostX86\x64\link.exe' -Output '$(OutDir)$(RootNamespace).winmd' -ObjectDirectory '$(IntDir)' -VsTools '$(VCToolsInstallDir)' -WindowsSdkDir '$(WindowsSdkDir)' -WindowsSdkVersion '$(WindowsTargetPlatformVersion)' }&quot;" />
+  </Target>
+  <Target Name="ConfigureNativePeLink" BeforeTargets="Link" DependsOnTargets="ComputeLinkSwitches">
+    <!-- The XAML metadata was already produced by GenerateWinMDWithMsvc.
+         Do not pass MSVC-only WinMD switches to LLVM's PE linker. -->
+    <PropertyGroup>
+      <_GenerateWindowsMetadata></_GenerateWindowsMetadata>
+    </PropertyGroup>
+    <ItemGroup>
+      <Link>
+        <GenerateWindowsMetadata></GenerateWindowsMetadata>
+        <WindowsMetadataFile></WindowsMetadataFile>
+        <RandomizedBaseAddress>false</RandomizedBaseAddress>
+        <HighEntropyVA>false</HighEntropyVA>
+        <AdditionalOptions>/DYNAMICBASE:NO /HIGHENTROPYVA:NO /alternatename:fabsf=Memories_UWP_Fabsf %(Link.AdditionalOptions)</AdditionalOptions>
+      </Link>
+    </ItemGroup>
+  </Target>
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

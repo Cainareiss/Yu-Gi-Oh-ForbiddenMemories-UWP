@@ -24,3 +24,19 @@
 # Tool-generated language caches
 **/__pycache__/
 *.py[cod]
+
+# UWP/MSBuild intermediates and local deployment output
+uwp/**/[Bb]in/
+uwp/**/[Oo]bj/
+uwp/**/[Gg]enerated\ Files/
+uwp/**/AppPackages/
+uwp/**/x64/
+uwp/**/ARM/
+uwp/**/ARM64/
+uwp/**/*.pdb
+uwp/**/*.appxsym
+uwp/**/*.appxrecipe
+uwp/**/*.pri
+uwp/**/*.xbf
+uwp/**/*.tlog/
+uwp/**/.vs/
