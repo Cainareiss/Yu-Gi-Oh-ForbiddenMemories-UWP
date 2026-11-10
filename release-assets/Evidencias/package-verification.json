@@ -1,0 +1,21 @@
+{
+  "passed": true,
+  "package": "C:\\Users\\Cain\u00e3\\Documents\\YuGiOh-UWP\\YuGiOhForbiddenMemoriesUWP_1.1.0.3_x64.msix",
+  "package_sha256": "0cc5fa9ca9e79ffa9412e7e02b2e132ffddd8fedf854ffdd18598479e81463d3",
+  "version": "1.1.0.3",
+  "files": 37,
+  "executable_sha256": "0590b5ade6217fb15ae2679d247314c3642a5b34ecfd39563d5ebef90dd96d74",
+  "image_base": "0x40000000",
+  "image_size": 40632320,
+  "appcontainer": true,
+  "nx": true,
+  "base_relocations": 80268,
+  "bundled_mods": [
+    "3d-monsters",
+    "ai-hard-mode",
+    "drop-missing-cards",
+    "hand-camera",
+    "yamyi-mods"
+  ],
+  "menu_theme_bytes": 2504620
+}

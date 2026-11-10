@@ -1,0 +1,225 @@
+{
+  "executable": "C:\\Users\\Cain\u00e3\\AppData\\Local\\Temp\\yfm-rebase-proof-20261107\\production-proof\\memories-production-rebased.exe",
+  "disc": "E:\\[PS1]_Yu-Gi-Oh! Forbidden Memories (PT-BR)\\Yu-Gi-Oh! Forbidden Memories (PT-BR).bin",
+  "mods": true,
+  "pictures": {
+    "01-name": {
+      "frame": 484,
+      "vram": "9179b70a3c7ecfa6",
+      "path": "C:\\Users\\Cain\u00e3\\AppData\\Local\\Temp\\yfm-rebase-proof-20261107\\production-proof\\run\\01-name.png"
+    },
+    "02-first-dialogue": {
+      "frame": 966,
+      "vram": "32fb2867311e4335",
+      "path": "C:\\Users\\Cain\u00e3\\AppData\\Local\\Temp\\yfm-rebase-proof-20261107\\production-proof\\run\\02-first-dialogue.png"
+    },
+    "03-dialogues-complete": {
+      "frame": 4046,
+      "vram": "13b0c7af5d065179",
+      "path": "C:\\Users\\Cain\u00e3\\AppData\\Local\\Temp\\yfm-rebase-proof-20261107\\production-proof\\run\\03-dialogues-complete.png"
+    },
+    "04-first-hand": {
+      "frame": 4806,
+      "vram": "9d6324476fe6cecf",
+      "path": "C:\\Users\\Cain\u00e3\\AppData\\Local\\Temp\\yfm-rebase-proof-20261107\\production-proof\\run\\04-first-hand.png"
+    }
+  },
+  "first_dialogue_id": "0546",
+  "first_duel_frame": 4046,
+  "player_name_guest_bytes": "6082",
+  "state": {
+    "frame": 4806,
+    "vblank": 4881,
+    "mode": 3,
+    "mode_name": "duel",
+    "mode_flags": 192,
+    "opponent": 1,
+    "starchips": 0,
+    "deck": [
+      107,
+      115,
+      122,
+      122,
+      123,
+      130,
+      137,
+      167,
+      174,
+      179,
+      192,
+      198,
+      231,
+      231,
+      240,
+      265,
+      292,
+      300,
+      302,
+      333,
+      337,
+      387,
+      395,
+      397,
+      399,
+      410,
+      411,
+      422,
+      444,
+      476,
+      504,
+      504,
+      548,
+      573,
+      579,
+      586,
+      591,
+      591,
+      598,
+      609
+    ],
+    "chest": {},
+    "duel": [
+      {
+        "lp": 8000,
+        "displayed_lp": 8000,
+        "max_lp": 8000,
+        "deck_cursor": 5,
+        "hand_slots": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "hand": [
+          {
+            "id": 410,
+            "attack": 400,
+            "defense": 500,
+            "flags": 32768,
+            "face_down": false,
+            "defense_position": false,
+            "used_this_turn": false
+          },
+          {
+            "id": 192,
+            "attack": 400,
+            "defense": 300,
+            "flags": 32768,
+            "face_down": false,
+            "defense_position": false,
+            "used_this_turn": false
+          },
+          {
+            "id": 107,
+            "attack": 800,
+            "defense": 600,
+            "flags": 32768,
+            "face_down": false,
+            "defense_position": false,
+            "used_this_turn": false
+          },
+          {
+            "id": 231,
+            "attack": 800,
+            "defense": 1200,
+            "flags": 32768,
+            "face_down": false,
+            "defense_position": false,
+            "used_this_turn": false
+          },
+          {
+            "id": 573,
+            "attack": 1100,
+            "defense": 700,
+            "flags": 32768,
+            "face_down": false,
+            "defense_position": false,
+            "used_this_turn": false
+          }
+        ],
+        "monsters": [
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "spells": [
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      },
+      {
+        "lp": 8000,
+        "displayed_lp": 8000,
+        "max_lp": 8000,
+        "deck_cursor": 0,
+        "hand_slots": [
+          -1,
+          -1,
+          -1,
+          -1,
+          -1
+        ],
+        "hand": [
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "monsters": [
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "spells": [
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      }
+    ],
+    "field": [
+      [
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      [
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
+    ],
+    "phase": 4,
+    "turn": 0
+  },
+  "passed": true
+}

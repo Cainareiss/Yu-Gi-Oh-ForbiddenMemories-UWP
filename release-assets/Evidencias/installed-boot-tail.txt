@@ -1,0 +1,34 @@
+﻿[BOOT] App::App() constructor finished
+[BOOT] App::OnLaunched() entered
+[BOOT] Frame created and assigned to Window::Current->Content
+[BOOT] Navigating rootFrame to MainPage
+[PAGE] MainPage::MainPage() started
+[PAGE] MainPage::InitializeComponent() succeeded
+[PAGE] StorageUwp::Initialize() succeeded
+[PAGE] GamepadUwp::Initialize() succeeded
+[PAGE] m_d3d12Renderer created successfully
+[PAGE] CompositionTarget::Rendering handler registered
+[PAGE] MainPage::MainPage() completed successfully
+[PAGE] MainPage::OnNavigatedTo() started
+[PAGE] Menu theme requested: native audio player, loop enabled, volume 70%.
+[BOOT] Navigated to MainPage successfully
+[BOOT] Window::Current->Activate() called
+[PAGE] D3D12Renderer initialized on SwapChainPanel with size 1366x696
+[PAGE] Menu music playback state: Paused.
+[PAGE] Menu music opened; duration=62 seconds.
+[PAGE] Menu music playback state: Playing.
+[BOOT] App::OnLaunched() entered
+[BOOT] Window::Current->Activate() called
+[PAGE] Menu theme playback position is advancing.
+[PAGE] StartGameWithCurrentRom called with: E:\[PS1]_Yu-Gi-Oh! Forbidden Memories (PT-BR)\Yu-Gi-Oh! Forbidden Memories (PT-BR).bin
+[PAGE] Menu theme stopped before starting the game.
+[PAGE] Menu music playback state: Paused.
+[BRIDGE] StartGame called with ROM: E:\[PS1]_Yu-Gi-Oh! Forbidden Memories (PT-BR)\Yu-Gi-Oh! Forbidden Memories (PT-BR).bin
+[BRIDGE] Local userDir: C:\Users\CainÃ£\AppData\Local\Packages\YuGiOhForbiddenMemoriesUWP_7d5j0gn82c13w\LocalState
+[BRIDGE] GameThreadEntryPoint started
+Native core v0.3.0: G32 guest layout initialized; starting the game.
+[AUDIO] OnStartAudio requested
+[AUDIO] XAudio2 started
+[AUDIO] worker started
+[AUDIO] OnStartAudio succeeded
+[BRIDGE] First frame presented successfully: 320x240 stride=320

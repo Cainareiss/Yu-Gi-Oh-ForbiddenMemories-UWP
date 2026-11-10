@@ -1,0 +1,3 @@
+fixed: PASS: 80897 real glyph spawns preserve the following 0x70-byte display slot, list links and flags
+
+old-abi: glyph spawner overwrote the following display slot: index=20 sequence=21; next=21 flags=00c0

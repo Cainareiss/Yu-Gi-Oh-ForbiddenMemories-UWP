@@ -1,0 +1,3 @@
+Production controller: PASS: 630 navigation transitions, 5040 real animation frames; guest pointers remain four bytes on x64
+Prior unsigned-load regression: expected failure
+selected an invalid/invisible destination: row=0 col=0 saved=0 action=0; actual=(14,14) xy=(22,24) size=16 timer=8 flags=4000
